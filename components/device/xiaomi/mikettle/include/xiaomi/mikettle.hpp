@@ -1540,12 +1540,12 @@ namespace b2h::device::xiaomi
 
                     // Configuration is finished, start normal operation.
                     
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_actn_upd]      / upd_actn      = "ble_update"_s,
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_mode_upd]      / upd_mode      = "ble_update"_s,
                     "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_set_upd]  / upd_temp_set  = "ble_update"_s,
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_upd]      / upd_temp      = "ble_update"_s,
                     "operate"_s + sml::event<events::notify> [is_status_chr && is_warm_type_upd] / upd_warm_type = "ble_update"_s,
                     "operate"_s + sml::event<events::notify> [is_status_chr && is_warm_time_upd] / upd_warm_time = "ble_update"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_actn_upd]      / upd_actn      = "ble_update"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_mode_upd]      / upd_mode      = "ble_update"_s,          
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_upd]      / upd_temp      = "ble_update"_s,
     
                     "operate"_s + sml::event<events::mqtt_data> [topic_warm_type && is_warm_type_mqtt_upd]             / warm_type_write       = "mqtt_update"_s,
                     "operate"_s + sml::event<events::mqtt_data> [topic_temp_set && is_temp_set_mqtt_upd]               / temp_set_write        = "mqtt_update"_s,
@@ -1557,6 +1557,7 @@ namespace b2h::device::xiaomi
 
                     "ble_update"_s + sml::event<events::write_finished> = "operate"_s,
                     "ble_update"_s + sml::event<events::abort>          = "operate"_s,
+                    "ble_update"_s + sml::event<events::mqtt_data>      / mqtt_receive, // Reshedule MQTT read, ignore the data.
                     "ble_update"_s + sml::event<events::disconnected>   = X,
 
                     "mqtt_update"_s + sml::event<events::write_finished> / mqtt_receive = "operate"_s,
