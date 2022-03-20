@@ -1,0 +1,18 @@
+#include "utils/esp_exception.hpp"
+
+#include "fmt/format.h"
+
+namespace b2h::utils
+{
+    esp_exception::esp_exception(std::string_view message, esp_err_t errc) :
+        std::runtime_error(fmt::format("{0} Error code: {1} [{2}]", message,
+            errc, esp_err_to_name(errc))),
+        _errc{ errc }
+    {
+    }
+
+    esp_err_t esp_exception::errc() const noexcept
+    {
+        return _errc;
+    }
+} // namespace b2h::utils

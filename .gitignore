@@ -1,0 +1,19 @@
+# IDE specific
+.vscode
+
+# Build directories
+build
+build-test
+
+# Documentation
+doc
+
+# ESP-IDF SDK configurations
+sdkconfig
+sdkconfig.old
+
+# Additional scripts
+install-deps.sh
+
+# Configurations
+config.json

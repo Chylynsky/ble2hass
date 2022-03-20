@@ -1,0 +1,10 @@
+idf_component_register(
+    SRCS
+        "factory.cpp"
+        "builder.cpp"  
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES
+        "device-base"
+        "mikettle"
+        "lywsd03mmc")
