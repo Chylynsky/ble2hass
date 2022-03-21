@@ -374,9 +374,9 @@ namespace b2h::device::xiaomi
 
                     "hass_config"_s + sml::event<events::configured> = "operate"_s,
                     "hass_config"_s + sml::event<events::abort>      = "terminate"_s,
-
-                    "operate"_s + sml::event<events::notify> [is_data_handle && is_temp_upd] / upd_temp = "param_write"_s,
+            
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_hum_upd]  / upd_hum  = "param_write"_s,
+                    "operate"_s + sml::event<events::notify> [is_data_handle && is_temp_upd] / upd_temp = "param_write"_s,
 
                     "operate"_s + sml::event<events::abort>        = "terminate"_s,
                     "operate"_s + sml::event<events::disconnected> = X,
