@@ -1231,20 +1231,28 @@ namespace b2h::device::xiaomi
                 };
 
                 const auto mqtt_receive = [](mikettle_state& state) {
-                    state.mqtt_client.async_receive([&](auto&& result) {
-                        if (!result.has_value())
-                        {
-                            log::warning(COMPONENT,
-                                "Failed to read MQTT data.");
-                            state.process_external_event(events::abort{});
-                            return;
-                        }
+                    const auto mqtt_receive_impl = [](auto self,
+                                                       mikettle_state& state) {
+                        state.mqtt_client.async_receive([&, self](
+                                                            auto&& result) {
+                            if (!result.has_value())
+                            {
+                                log::warning(COMPONENT,
+                                    "Failed to read MQTT data.");
+                                state.process_external_event(events::abort{});
+                                return;
+                            }
 
-                        state.process_external_event(events::mqtt_data{
-                            result.value().topic,
-                            result.value().data,
+                            state.process_external_event(events::mqtt_data{
+                                result.value().topic,
+                                result.value().data,
+                            });
+
+                            self(self, state);
                         });
-                    });
+                    };
+
+                    mqtt_receive_impl(mqtt_receive_impl, state);
                 };
 
                 const auto make_topic_guard = [](const std::string_view topic) {
@@ -1540,29 +1548,24 @@ namespace b2h::device::xiaomi
 
                     // Configuration is finished, start normal operation.
                     
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_set_upd]  / upd_temp_set  = "ble_update"_s,
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_warm_type_upd] / upd_warm_type = "ble_update"_s,
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_warm_time_upd] / upd_warm_time = "ble_update"_s,
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_actn_upd]      / upd_actn      = "ble_update"_s,
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_mode_upd]      / upd_mode      = "ble_update"_s,          
-                    "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_upd]      / upd_temp      = "ble_update"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_set_upd]  / upd_temp_set  = "param_write"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_warm_type_upd] / upd_warm_type = "param_write"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_warm_time_upd] / upd_warm_time = "param_write"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_actn_upd]      / upd_actn      = "param_write"_s,
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_mode_upd]      / upd_mode      = "param_write"_s,          
+                    "operate"_s + sml::event<events::notify> [is_status_chr && is_temp_upd]      / upd_temp      = "param_write"_s,
     
-                    "operate"_s + sml::event<events::mqtt_data> [topic_warm_type && is_warm_type_mqtt_upd]             / warm_type_write       = "mqtt_update"_s,
-                    "operate"_s + sml::event<events::mqtt_data> [topic_temp_set && is_temp_set_mqtt_upd]               / temp_set_write        = "mqtt_update"_s,
-                    "operate"_s + sml::event<events::mqtt_data> [topic_toab && is_toab_mqtt_upd]                       / toab_write            = "mqtt_update"_s,
-                    "operate"_s + sml::event<events::mqtt_data> [topic_warm_time_limit && is_warm_time_limit_mqtt_upd] / warm_time_limit_write = "mqtt_update"_s,
+                    "operate"_s + sml::event<events::mqtt_data> [topic_warm_type && is_warm_type_mqtt_upd]             / warm_type_write       = "param_write"_s,
+                    "operate"_s + sml::event<events::mqtt_data> [topic_temp_set && is_temp_set_mqtt_upd]               / temp_set_write        = "param_write"_s,
+                    "operate"_s + sml::event<events::mqtt_data> [topic_toab && is_toab_mqtt_upd]                       / toab_write            = "param_write"_s,
+                    "operate"_s + sml::event<events::mqtt_data> [topic_warm_time_limit && is_warm_time_limit_mqtt_upd] / warm_time_limit_write = "param_write"_s,
 
                     "operate"_s + sml::event<events::abort>         = "terminate"_s,
                     "operate"_s + sml::event<events::disconnected>  = X,
 
-                    "ble_update"_s + sml::event<events::write_finished> = "operate"_s,
-                    "ble_update"_s + sml::event<events::abort>          = "operate"_s,
-                    "ble_update"_s + sml::event<events::mqtt_data>      / mqtt_receive, // Reshedule MQTT read, ignore the data.
-                    "ble_update"_s + sml::event<events::disconnected>   = X,
-
-                    "mqtt_update"_s + sml::event<events::write_finished> / mqtt_receive = "operate"_s,
-                    "mqtt_update"_s + sml::event<events::abort>          / mqtt_receive = "operate"_s,
-                    "mqtt_update"_s + sml::event<events::disconnected>                  = X,
+                    "param_write"_s + sml::event<events::write_finished> = "operate"_s,
+                    "param_write"_s + sml::event<events::abort>          = "operate"_s,
+                    "param_write"_s + sml::event<events::disconnected>   = X,
 
                     "terminate"_s + on_entry<_> / on_abort_conn
                 );
