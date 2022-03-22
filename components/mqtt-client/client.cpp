@@ -144,12 +144,14 @@ namespace b2h::mqtt
         {
             log::debug(COMPONENT, "Event: MQTT_EVENT_CONNECTED");
             client_ptr->m_dispatcher.async_dispatch<connect>({});
+            client_ptr->m_dispatcher.async_dispatch<connected>({});
             break;
         }
         case MQTT_EVENT_DISCONNECTED:
         {
             log::debug(COMPONENT, "Event: MQTT_EVENT_DISCONNECTED");
             client_ptr->m_dispatcher.async_dispatch<disconnect>({});
+            client_ptr->m_dispatcher.async_dispatch<disconnected>({});
             break;
         }
         default:
