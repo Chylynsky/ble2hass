@@ -50,9 +50,6 @@ namespace b2h::device::xiaomi
             struct disconnected {
             };
 
-            struct configured {
-            };
-
             struct notify {
                 std::uint16_t attr_handle;
                 std::vector<std::uint8_t> data;
@@ -139,9 +136,9 @@ namespace b2h::device::xiaomi
         };
 
         struct lywsd03mmc_state {
-            using external_event_variant_t = std::variant<events::abort,
-                events::srv_disced, events::chrs_disced, events::write_finished,
-                events::configured>;
+            using external_event_variant_t =
+                std::variant<events::abort, events::srv_disced,
+                    events::chrs_disced, events::write_finished>;
 
             ble::gatt::client& gatt_client;
             mqtt::client& mqtt_client;
@@ -253,55 +250,37 @@ namespace b2h::device::xiaomi
                         });
                 };
 
-                const auto on_data_subscribe = [](lywsd03mmc_state& state) {
+                const auto on_data_subscribe = [=](lywsd03mmc_state& state) {
                     hass::sensor_type temperature_sensor;
                     temperature_sensor.state_topic =
                         TEMPERATURE_SENSOR_STATE_TOPIC;
                     temperature_sensor.name         = TEMPERATURE_SENSOR_NAME;
                     temperature_sensor.device_class = "temperature";
                     temperature_sensor.unit_of_measurement = "°C";
+                    temperature_sensor.qos                 = 1;
 
                     state.mqtt_client.async_publish(
                         TEMPERATURE_SENSOR_CONFIG_TOPIC,
                         utils::json::dump(hass::serialize(temperature_sensor)),
                         1,
                         true,
-                        [&](auto&& result) {
-                            if (!result.has_value())
-                            {
-                                log::error(COMPONENT,
-                                    "Failed to publish temperature sensor configration.");
-                                state.process_external_event(events::abort{});
-                                return;
-                            }
+                        write_handler(state));
+                };
 
-                            hass::sensor_type humidity_sensor;
-                            humidity_sensor.state_topic =
-                                HUMIDITY_SENSOR_STATE_TOPIC;
-                            humidity_sensor.name         = HUMIDITY_SENSOR_NAME;
-                            humidity_sensor.device_class = "humidity";
-                            humidity_sensor.unit_of_measurement = "%";
+                const auto on_conf_temp_sens = [=](lywsd03mmc_state& state) {
+                    hass::sensor_type humidity_sensor;
+                    humidity_sensor.state_topic  = HUMIDITY_SENSOR_STATE_TOPIC;
+                    humidity_sensor.name         = HUMIDITY_SENSOR_NAME;
+                    humidity_sensor.device_class = "humidity";
+                    humidity_sensor.unit_of_measurement = "%";
+                    humidity_sensor.qos                 = 1;
 
-                            state.mqtt_client.async_publish(
-                                HUMIDITY_SENSOR_CONFIG_TOPIC,
-                                utils::json::dump(
-                                    hass::serialize(humidity_sensor)),
-                                1,
-                                true,
-                                [&](auto&& result) {
-                                    if (!result.has_value())
-                                    {
-                                        log::error(COMPONENT,
-                                            "Failed to publish humidity sensor configuration.");
-                                        state.process_external_event(
-                                            events::abort{});
-                                        return;
-                                    }
-
-                                    state.process_external_event(
-                                        events::configured{});
-                                });
-                        });
+                    state.mqtt_client.async_publish(
+                        HUMIDITY_SENSOR_CONFIG_TOPIC,
+                        utils::json::dump(hass::serialize(humidity_sensor)),
+                        1,
+                        true,
+                        write_handler(state));
                 };
 
                 const auto is_data_handle = [](lywsd03mmc_state& state,
@@ -340,7 +319,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             static_cast<std::size_t>(iter - buff.begin()),
                         },
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -369,7 +348,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             static_cast<std::size_t>(iter - buff.begin()),
                         },
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -389,11 +368,14 @@ namespace b2h::device::xiaomi
                     "disc_data_chrs"_s + sml::event<events::chrs_disced> / on_chrs_disced = "data_subscribe"_s,
                     "disc_data_chrs"_s + sml::event<events::abort>                        = "terminate"_s,
 
-                    "data_subscribe"_s + sml::event<events::write_finished> / on_data_subscribe = "hass_config"_s,
+                    "data_subscribe"_s + sml::event<events::write_finished> / on_data_subscribe = "conf_temp_sens"_s,
                     "data_subscribe"_s + sml::event<events::abort>                              = "terminate"_s,
 
-                    "hass_config"_s + sml::event<events::configured> = "operate"_s,
-                    "hass_config"_s + sml::event<events::abort>      = "terminate"_s,
+                    "conf_temp_sens"_s + sml::event<events::write_finished> / on_conf_temp_sens = "conf_humi_sens"_s,
+                    "conf_temp_sens"_s + sml::event<events::abort>                              = "terminate"_s,
+
+                    "conf_humi_sens"_s + sml::event<events::write_finished> = "operate"_s,
+                    "conf_humi_sens"_s + sml::event<events::abort>          = "terminate"_s,
             
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_hum_upd]  / upd_hum  = "param_write"_s,
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_temp_upd] / upd_temp = "param_write"_s,
@@ -403,7 +385,7 @@ namespace b2h::device::xiaomi
 
                     "param_write"_s + sml::event<events::write_finished> = "operate"_s,
                     "param_write"_s + sml::event<events::abort>          = "operate"_s,
-                    "param_write"_s + sml::event<events::disconnected> = X,
+                    "param_write"_s + sml::event<events::disconnected>   = X,
 
                     "terminate"_s + on_entry<_> / on_abort_conn
                 );

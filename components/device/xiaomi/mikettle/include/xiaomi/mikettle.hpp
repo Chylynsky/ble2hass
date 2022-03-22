@@ -671,6 +671,7 @@ namespace b2h::device::xiaomi
                 const auto mqtt_sub = [=](const char* topic) {
                     return [=](mikettle_state& state) {
                         state.mqtt_client.async_subscribe(topic,
+                            1,
                             subscribe_handler(state));
                     };
                 };
@@ -825,6 +826,7 @@ namespace b2h::device::xiaomi
                     sens.state_topic         = TEMPERATURE_SENSOR_STATE_TOPIC;
                     sens.device_class        = "temperature";
                     sens.unit_of_measurement = "°C";
+                    sens.qos                 = 1;
 
                     state.mqtt_client.async_publish(
                         TEMPERATURE_SENSOR_CONFIG_TOPIC,
@@ -839,6 +841,7 @@ namespace b2h::device::xiaomi
 
                     sens.name        = ACTION_SENSOR_NAME;
                     sens.state_topic = ACTION_SENSOR_STATE_TOPIC;
+                    sens.qos         = 1;
 
                     state.mqtt_client.async_publish(ACTION_SENSOR_CONFIG_TOPIC,
                         utils::json::dump(hass::serialize(sens)),
@@ -852,6 +855,7 @@ namespace b2h::device::xiaomi
 
                     sens.name        = MODE_SENSOR_NAME;
                     sens.state_topic = MODE_SENSOR_STATE_TOPIC;
+                    sens.qos         = 1;
 
                     state.mqtt_client.async_publish(MODE_SENSOR_CONFIG_TOPIC,
                         utils::json::dump(hass::serialize(sens)),
@@ -866,6 +870,7 @@ namespace b2h::device::xiaomi
                     sens.name        = KEEP_WARM_TIME_SENSOR_NAME;
                     sens.state_topic = KEEP_WARM_TIME_SENSOR_STATE_TOPIC;
                     sens.unit_of_measurement = "min";
+                    sens.qos                 = 1;
 
                     state.mqtt_client.async_publish(
                         KEEP_WARM_TIME_SENSOR_CONFIG_TOPIC,
@@ -885,6 +890,8 @@ namespace b2h::device::xiaomi
                     num.max           = 95.0;
                     num.step          = 1.0;
                     num.unit_of_measurement = "°C";
+                    num.retain              = true;
+                    num.qos                 = 1;
 
                     state.mqtt_client.async_publish(
                         TEMPERATURE_SET_NUMBER_CONFIG_TOPIC,
@@ -904,6 +911,8 @@ namespace b2h::device::xiaomi
                     num.max           = 12.0;
                     num.step          = 0.5;
                     num.unit_of_measurement = "h";
+                    num.retain              = true;
+                    num.qos                 = 1;
 
                     state.mqtt_client.async_publish(
                         KEEP_WARM_TIME_LIMIT_NUMBER_CONFIG_TOPIC,
@@ -927,6 +936,8 @@ namespace b2h::device::xiaomi
                     sel.command_topic = KEEP_WARM_TYPE_SELECT_CMD_TOPIC;
                     sel.state_topic   = KEEP_WARM_TYPE_SELECT_STATE_TOPIC;
                     sel.options       = tcb::make_span(opts);
+                    sel.retain        = true;
+                    sel.qos           = 1;
 
                     state.mqtt_client.async_publish(
                         KEEP_WARM_TYPE_SELECT_CONFIG_TOPIC,
@@ -942,6 +953,8 @@ namespace b2h::device::xiaomi
                     sw.name          = TURN_OFF_AFTER_BOIL_SWITCH_NAME;
                     sw.state_topic   = TURN_OFF_AFTER_BOIL_SWITCH_STATE_TOPIC;
                     sw.command_topic = TURN_OFF_AFTER_BOIL_SWITCH_CMD_TOPIC;
+                    sw.retain        = true;
+                    sw.qos           = 1;
 
                     state.mqtt_client.async_publish(
                         TURN_OFF_AFTER_BOIL_SWITCH_CONFIG_TOPIC,
@@ -1097,7 +1110,7 @@ namespace b2h::device::xiaomi
 
                     state.mqtt_client.async_publish(ACTION_SENSOR_STATE_TOPIC,
                         action_to_sv(event.data[0]),
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -1118,7 +1131,7 @@ namespace b2h::device::xiaomi
 
                     state.mqtt_client.async_publish(MODE_SENSOR_STATE_TOPIC,
                         mode_to_sv(event.data[1]),
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -1152,7 +1165,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             static_cast<std::size_t>(iter - buff.begin()),
                         },
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -1186,7 +1199,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             static_cast<std::size_t>(iter - buff.begin()),
                         },
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -1208,7 +1221,7 @@ namespace b2h::device::xiaomi
                     state.mqtt_client.async_publish(
                         KEEP_WARM_TYPE_SELECT_STATE_TOPIC,
                         keep_warm_type_to_sv(state_var.cache.keep_warm_type),
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -1245,7 +1258,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             static_cast<std::size_t>(iter - buff.begin()),
                         },
-                        0,
+                        1,
                         true,
                         write_handler(state));
                 };
@@ -1418,7 +1431,7 @@ namespace b2h::device::xiaomi
                                     static_cast<std::size_t>(
                                         iter - buff.begin()),
                                 },
-                                0,
+                                1,
                                 true,
                                 write_handler(state));
                         });
@@ -1469,7 +1482,7 @@ namespace b2h::device::xiaomi
                             state.mqtt_client.async_publish(
                                 TURN_OFF_AFTER_BOIL_SWITCH_STATE_TOPIC,
                                 uint8_to_switch_val(state_var.temp_val),
-                                0,
+                                1,
                                 true,
                                 write_handler(state));
                         });
