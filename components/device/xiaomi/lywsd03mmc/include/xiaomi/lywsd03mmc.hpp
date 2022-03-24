@@ -305,11 +305,12 @@ namespace b2h::device::xiaomi
                 };
 
                 const auto upd_temp = [=](lywsd03mmc_state& state) {
-                    using buff_t = std::array<char, 8>;
+                    using buff_t = std::array<char, 6>;
 
                     buff_t buff;
 
-                    buff_t::iterator iter = fmt::format_to(buff.begin(),
+                    const auto [iter, size] = fmt::format_to_n(buff.begin(),
+                        buff.size(),
                         "{:.1f}",
                         state.temperature);
 
@@ -317,7 +318,7 @@ namespace b2h::device::xiaomi
                         TEMPERATURE_SENSOR_STATE_TOPIC,
                         std::string_view{
                             buff.data(),
-                            static_cast<std::size_t>(iter - buff.begin()),
+                            size,
                         },
                         1,
                         true,
@@ -336,17 +337,19 @@ namespace b2h::device::xiaomi
                 };
 
                 const auto upd_hum = [=](lywsd03mmc_state& state) {
-                    using buff_t = std::array<char, 8>;
+                    using buff_t = std::array<char, 4>;
 
                     buff_t buff;
 
-                    buff_t::iterator iter =
-                        fmt::format_to(buff.begin(), "{}", state.humidity);
+                    const auto [iter, size] = fmt::format_to_n(buff.begin(),
+                        buff.size(),
+                        "{}",
+                        state.humidity);
 
                     state.mqtt_client.async_publish(HUMIDITY_SENSOR_STATE_TOPIC,
                         std::string_view{
                             buff.data(),
-                            static_cast<std::size_t>(iter - buff.begin()),
+                            size,
                         },
                         1,
                         true,

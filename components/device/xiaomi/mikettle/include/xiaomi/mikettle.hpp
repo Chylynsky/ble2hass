@@ -1161,9 +1161,9 @@ namespace b2h::device::xiaomi
                     state_var.cache.temperature_set = event.data[4];
 
                     buff_t buff;
-                    buff_t::iterator iter;
 
-                    iter = fmt::format_to(buff.begin(),
+                    const auto [iter, size] = fmt::format_to_n(buff.begin(),
+                        buff.size(),
                         "{}",
                         state_var.cache.temperature_set);
 
@@ -1171,7 +1171,7 @@ namespace b2h::device::xiaomi
                         TEMPERATURE_SET_NUMBER_STATE_TOPIC,
                         std::string_view{
                             buff.data(),
-                            static_cast<std::size_t>(iter - buff.begin()),
+                            size,
                         },
                         1,
                         true,
@@ -1195,9 +1195,9 @@ namespace b2h::device::xiaomi
                     state_var.cache.temperature_current = event.data[5];
 
                     buff_t buff;
-                    buff_t::iterator iter;
 
-                    iter = fmt::format_to(buff.begin(),
+                    const auto [iter, size] = fmt::format_to_n(buff.begin(),
+                        buff.size(),
                         "{}",
                         state_var.cache.temperature_current);
 
@@ -1205,7 +1205,7 @@ namespace b2h::device::xiaomi
                         TEMPERATURE_SENSOR_STATE_TOPIC,
                         std::string_view{
                             buff.data(),
-                            static_cast<std::size_t>(iter - buff.begin()),
+                            size,
                         },
                         1,
                         true,
@@ -1254,9 +1254,9 @@ namespace b2h::device::xiaomi
                     state_var.cache.keep_warm_time = state_var.temp_val;
 
                     buff_t buff;
-                    buff_t::iterator iter;
 
-                    iter = fmt::format_to(buff.begin(),
+                    const auto [iter, size] = fmt::format_to_n(buff.begin(),
+                        buff.size(),
                         "{}",
                         state_var.cache.keep_warm_time);
 
@@ -1264,7 +1264,7 @@ namespace b2h::device::xiaomi
                         KEEP_WARM_TIME_SENSOR_STATE_TOPIC,
                         std::string_view{
                             buff.data(),
-                            static_cast<std::size_t>(iter - buff.begin()),
+                            size,
                         },
                         1,
                         true,
@@ -1424,13 +1424,14 @@ namespace b2h::device::xiaomi
                                 state_var.temp_val;
 
                             buff_t buff;
-                            buff_t::iterator iter;
 
-                            iter = fmt::format_to(buff.begin(),
-                                "{:.1f}",
-                                (static_cast<float>(
-                                     state_var.cache.keep_warm_time_limit) /
-                                    2.0f));
+                            const auto [iter, size] =
+                                fmt::format_to_n(buff.begin(),
+                                    buff.size(),
+                                    "{:.1f}",
+                                    (static_cast<float>(
+                                         state_var.cache.keep_warm_time_limit) /
+                                        2.0f));
 
                             state.mqtt_client.async_publish(
                                 KEEP_WARM_TIME_LIMIT_NUMBER_STATE_TOPIC,
