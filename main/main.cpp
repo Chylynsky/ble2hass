@@ -373,6 +373,7 @@ namespace b2h
                                     m_config.mqtt_broker_uri,
                                     m_config.mqtt_user,
                                     m_config.mqtt_password,
+                                    true,
                                 })
                                 .gatt_client(gap_central,
                                     utils::make_mac(device_config.get().mac)

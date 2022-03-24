@@ -55,6 +55,8 @@ namespace b2h::mqtt
         ++id;
 
         config.client_id = id_buff.data();
+        config.disable_clean_session =
+            static_cast<int>(cfg.disable_clean_session);
 
         log::debug(COMPONENT, "Client ID set to: {}.", id_buff.data());
 
@@ -144,14 +146,14 @@ namespace b2h::mqtt
         {
             log::debug(COMPONENT, "Event: MQTT_EVENT_CONNECTED");
             client_ptr->m_dispatcher.async_dispatch<connect>({});
-            client_ptr->m_dispatcher.async_dispatch<connected>({});
+            // client_ptr->m_dispatcher.async_dispatch<connected>({});
             break;
         }
         case MQTT_EVENT_DISCONNECTED:
         {
             log::debug(COMPONENT, "Event: MQTT_EVENT_DISCONNECTED");
             client_ptr->m_dispatcher.async_dispatch<disconnect>({});
-            client_ptr->m_dispatcher.async_dispatch<disconnected>({});
+            // client_ptr->m_dispatcher.async_dispatch<disconnected>({});
             break;
         }
         default:

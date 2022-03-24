@@ -61,11 +61,6 @@ namespace b2h
         struct disconnect : public event::basic_event<void, esp_err_t> {
         };
 
-        struct connected : public event::basic_event<void, esp_err_t> {
-        };
-
-        struct disconnected : public event::basic_event<void, esp_err_t> {
-        };
     } // namespace events::mqtt
 
     namespace mqtt
@@ -74,6 +69,7 @@ namespace b2h
             std::string uri;
             std::string username;
             std::string password;
+            bool disable_clean_session;
         };
 
         static constexpr std::string_view COMPONENT = "mqtt::client";
@@ -293,22 +289,6 @@ namespace b2h
                 m_receiver.async_receive<data>(std::forward<HandlerT>(handler));
             }
 
-            template<typename HandlerT>
-            void on_connect(HandlerT&& handler) noexcept
-            {
-                using namespace b2h::events::mqtt;
-                m_receiver.async_receive<connected>(
-                    std::forward<HandlerT>(handler));
-            }
-
-            template<typename HandlerT>
-            void on_disconnect(HandlerT&& handler) noexcept
-            {
-                using namespace b2h::events::mqtt;
-                m_receiver.async_receive<disconnected>(
-                    std::forward<HandlerT>(handler));
-            }
-
         private:
             // clang-format off
             using dispatcher_type = event::dispatcher<
@@ -317,9 +297,7 @@ namespace b2h
                 b2h::events::mqtt::disconnect,
                 b2h::events::mqtt::publish,
                 b2h::events::mqtt::subscribe,
-                b2h::events::mqtt::unsubscribe,
-                b2h::events::mqtt::connected,
-                b2h::events::mqtt::disconnected
+                b2h::events::mqtt::unsubscribe
             >;
 
             using receiver_type = typename dispatcher_type::receiver_type;

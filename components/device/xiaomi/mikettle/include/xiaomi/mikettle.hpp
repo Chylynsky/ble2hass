@@ -91,12 +91,6 @@ namespace b2h::device::xiaomi
 
             struct abort {
             };
-
-            struct mqtt_conn {
-            };
-
-            struct mqtt_disc {
-            };
         }; // namespace events
 
         inline constexpr std::string_view COMPONENT{ "xiaomi::mikettle" };
@@ -546,9 +540,7 @@ namespace b2h::device::xiaomi
                 events::read_finished, 
                 events::write_finished,
                 events::mqtt_data, 
-                events::sub_finished, 
-                events::mqtt_conn,
-                events::mqtt_disc
+                events::sub_finished
             >;
             // clang-format on
 
@@ -1304,18 +1296,6 @@ namespace b2h::device::xiaomi
                     mqtt_receive_impl(mqtt_receive_impl, state);
                 };
 
-                const auto mqtt_on_disc = [](mikettle_state& state) {
-                    state.mqtt_client.on_disconnect([&](auto&&) {
-                        state.process_external_event(events::mqtt_disc{});
-                    });
-                };
-
-                const auto mqtt_on_conn = [](mikettle_state& state) {
-                    state.mqtt_client.on_connect([&](auto&&) {
-                        state.process_external_event(events::mqtt_conn{});
-                    });
-                };
-
                 const auto make_topic_guard = [](const std::string_view topic) {
                     return [=](events::mqtt_data event) {
                         return topic == event.topic;
@@ -1590,8 +1570,8 @@ namespace b2h::device::xiaomi
                     "read_time_set"_s       + sml::event<events::abort>                                        = "terminate"_s,
 
                     "read_toab"_s           + on_entry<_>                        / toab_start_read,
-                    "read_toab"_s           + sml::event<events::read_finished>  / (mqtt_receive, sub_temp_set) = "sub_temp_set"_s,
-                    "read_toab"_s           + sml::event<events::abort>                                         = "terminate"_s,
+                    "read_toab"_s           + sml::event<events::read_finished>  / sub_temp_set                = "sub_temp_set"_s,
+                    "read_toab"_s           + sml::event<events::abort>                                        = "terminate"_s,
 
                     "sub_temp_set"_s        + sml::event<events::sub_finished>   / sub_warm_time_limit         = "sub_warm_time"_s,
                     "sub_temp_set"_s        + sml::event<events::abort>                                        = "terminate"_s,
@@ -1602,7 +1582,7 @@ namespace b2h::device::xiaomi
                     "sub_warm_type"_s       + sml::event<events::sub_finished>   / sub_toab                    = "sub_toab"_s,
                     "sub_warm_type"_s       + sml::event<events::abort>                                        = "terminate"_s,
 
-                    "sub_toab"_s            + sml::event<events::sub_finished>   / (mqtt_on_disc, mqtt_on_conn) = "operate"_s,
+                    "sub_toab"_s            + sml::event<events::sub_finished>   / mqtt_receive                 = "operate"_s,
                     "sub_toab"_s            + sml::event<events::abort>                                         = "terminate"_s,
 
                     // Configuration is finished, start normal operation.
@@ -1619,15 +1599,12 @@ namespace b2h::device::xiaomi
                     "operate"_s + sml::event<events::mqtt_data> [topic_toab && is_toab_mqtt_upd]                       / toab_write            = "param_write"_s,
                     "operate"_s + sml::event<events::mqtt_data> [topic_warm_time_limit && is_warm_time_limit_mqtt_upd] / warm_time_limit_write = "param_write"_s,
 
-                    "operate"_s + sml::event<events::mqtt_disc>     = "mqtt_reconn"_s,
                     "operate"_s + sml::event<events::abort>         = "terminate"_s,
                     "operate"_s + sml::event<events::disconnected>  = X,        
 
                     "param_write"_s + sml::event<events::write_finished> = "operate"_s,
                     "param_write"_s + sml::event<events::abort>          = "operate"_s,
                     "param_write"_s + sml::event<events::disconnected>   = X,
-
-                    "mqtt_reconn"_s + sml::event<events::mqtt_conn> / sub_temp_set = "sub_temp_set"_s, // Resubscribe to cmd topics
 
                     "terminate"_s + on_entry<_> / on_abort_conn
                 );
