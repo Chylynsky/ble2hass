@@ -90,6 +90,15 @@ namespace b2h::device::xiaomi
         static constexpr const char* HUMIDITY_SENSOR_STATE_TOPIC{
             "homeassistant/sensor/lywsd03mmc_humidity/state"
         };
+        static constexpr const char* BATTERY_SENSOR_NAME{
+            "LYWSD03MMC Battery"
+        };
+        static constexpr const char* BATTERY_SENSOR_CONFIG_TOPIC{
+            "homeassistant/sensor/lywsd03mmc_battery/config"
+        };
+        static constexpr const char* BATTERY_SENSOR_STATE_TOPIC{
+            "homeassistant/sensor/lywsd03mmc_battery/state"
+        };
 
         static constexpr ble_uuid128_t DATA_SRV{
             BLE_UUID_TYPE_128,
@@ -147,6 +156,7 @@ namespace b2h::device::xiaomi
 
             float temperature;
             int humidity;
+            float voltage;
 
             std::function<void(external_event_variant_t)>
                 process_external_event;
@@ -257,7 +267,7 @@ namespace b2h::device::xiaomi
                     temperature_sensor.name         = TEMPERATURE_SENSOR_NAME;
                     temperature_sensor.device_class = "temperature";
                     temperature_sensor.unit_of_measurement = "°C";
-                    temperature_sensor.qos                 = 1;
+                    temperature_sensor.qos                 = 0;
 
                     state.mqtt_client.async_publish(
                         TEMPERATURE_SENSOR_CONFIG_TOPIC,
@@ -273,11 +283,26 @@ namespace b2h::device::xiaomi
                     humidity_sensor.name         = HUMIDITY_SENSOR_NAME;
                     humidity_sensor.device_class = "humidity";
                     humidity_sensor.unit_of_measurement = "%";
-                    humidity_sensor.qos                 = 1;
+                    humidity_sensor.qos                 = 0;
 
                     state.mqtt_client.async_publish(
                         HUMIDITY_SENSOR_CONFIG_TOPIC,
                         utils::json::dump(hass::serialize(humidity_sensor)),
+                        1,
+                        true,
+                        write_handler(state));
+                };
+
+                const auto on_conf_humi_sens = [=](lywsd03mmc_state& state) {
+                    hass::sensor_type battery_sensor;
+                    battery_sensor.state_topic  = BATTERY_SENSOR_STATE_TOPIC;
+                    battery_sensor.name         = BATTERY_SENSOR_NAME;
+                    battery_sensor.device_class = "voltage";
+                    battery_sensor.unit_of_measurement = "V";
+                    battery_sensor.qos                 = 0;
+
+                    state.mqtt_client.async_publish(BATTERY_SENSOR_CONFIG_TOPIC,
+                        utils::json::dump(hass::serialize(battery_sensor)),
                         1,
                         true,
                         write_handler(state));
@@ -292,7 +317,8 @@ namespace b2h::device::xiaomi
                                              const events::notify& event) {
                     const float temperature =
                         static_cast<float>(
-                            event.data[0] | (event.data[1] << 8)) *
+                            (static_cast<std::uint16_t>(event.data[1]) << 8) |
+                            event.data[0]) *
                         0.01f;
 
                     if (temperature == state.temperature)
@@ -320,7 +346,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             size,
                         },
-                        1,
+                        0,
                         true,
                         write_handler(state));
                 };
@@ -351,7 +377,44 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             size,
                         },
-                        1,
+                        0,
+                        true,
+                        write_handler(state));
+                };
+
+                const auto is_batt_upd = [](lywsd03mmc_state& state,
+                                             const events::notify& event) {
+                    const float voltage =
+                        static_cast<float>(
+                            (static_cast<std::uint16_t>(event.data[4]) << 8) |
+                            event.data[3]) *
+                        0.001f;
+
+                    if (state.voltage == voltage)
+                    {
+                        return false;
+                    }
+
+                    state.voltage = voltage;
+                    return true;
+                };
+
+                const auto upd_batt = [=](lywsd03mmc_state& state) {
+                    using buff_t = std::array<char, 3>;
+
+                    buff_t buff;
+
+                    const auto [iter, size] = fmt::format_to_n(buff.begin(),
+                        buff.size(),
+                        "{:.1f}",
+                        state.voltage);
+
+                    state.mqtt_client.async_publish(BATTERY_SENSOR_STATE_TOPIC,
+                        std::string_view{
+                            buff.data(),
+                            size,
+                        },
+                        0,
                         true,
                         write_handler(state));
                 };
@@ -377,9 +440,13 @@ namespace b2h::device::xiaomi
                     "conf_temp_sens"_s + sml::event<events::write_finished> / on_conf_temp_sens = "conf_humi_sens"_s,
                     "conf_temp_sens"_s + sml::event<events::abort>                              = "terminate"_s,
 
-                    "conf_humi_sens"_s + sml::event<events::write_finished> = "operate"_s,
-                    "conf_humi_sens"_s + sml::event<events::abort>          = "terminate"_s,
+                    "conf_humi_sens"_s + sml::event<events::write_finished> / on_conf_humi_sens = "conf_batt_sens"_s,
+                    "conf_humi_sens"_s + sml::event<events::abort>                              = "terminate"_s,
+
+                    "conf_batt_sens"_s + sml::event<events::write_finished> = "operate"_s,
+                    "conf_batt_sens"_s + sml::event<events::abort>          = "terminate"_s,
             
+                    "operate"_s + sml::event<events::notify> [is_data_handle && is_batt_upd] / upd_batt = "param_write"_s,
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_hum_upd]  / upd_hum  = "param_write"_s,
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_temp_upd] / upd_temp = "param_write"_s,
 
