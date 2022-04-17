@@ -834,7 +834,7 @@ namespace b2h::device::xiaomi
                     sens.state_topic         = TEMPERATURE_SENSOR_STATE_TOPIC;
                     sens.device_class        = "temperature";
                     sens.unit_of_measurement = "°C";
-                    sens.qos                 = 1;
+                    sens.qos                 = 0;
 
                     state.mqtt_client.async_publish(
                         TEMPERATURE_SENSOR_CONFIG_TOPIC,
@@ -849,7 +849,7 @@ namespace b2h::device::xiaomi
 
                     sens.name        = ACTION_SENSOR_NAME;
                     sens.state_topic = ACTION_SENSOR_STATE_TOPIC;
-                    sens.qos         = 1;
+                    sens.qos         = 0;
 
                     state.mqtt_client.async_publish(ACTION_SENSOR_CONFIG_TOPIC,
                         utils::json::dump(hass::serialize(sens)),
@@ -863,7 +863,7 @@ namespace b2h::device::xiaomi
 
                     sens.name        = MODE_SENSOR_NAME;
                     sens.state_topic = MODE_SENSOR_STATE_TOPIC;
-                    sens.qos         = 1;
+                    sens.qos         = 0;
 
                     state.mqtt_client.async_publish(MODE_SENSOR_CONFIG_TOPIC,
                         utils::json::dump(hass::serialize(sens)),
@@ -878,7 +878,7 @@ namespace b2h::device::xiaomi
                     sens.name        = KEEP_WARM_TIME_SENSOR_NAME;
                     sens.state_topic = KEEP_WARM_TIME_SENSOR_STATE_TOPIC;
                     sens.unit_of_measurement = "min";
-                    sens.qos                 = 1;
+                    sens.qos                 = 0;
 
                     state.mqtt_client.async_publish(
                         KEEP_WARM_TIME_SENSOR_CONFIG_TOPIC,
@@ -1118,7 +1118,7 @@ namespace b2h::device::xiaomi
 
                     state.mqtt_client.async_publish(ACTION_SENSOR_STATE_TOPIC,
                         action_to_sv(event.data[0]),
-                        1,
+                        0,
                         true,
                         write_handler(state));
                 };
@@ -1139,7 +1139,7 @@ namespace b2h::device::xiaomi
 
                     state.mqtt_client.async_publish(MODE_SENSOR_STATE_TOPIC,
                         mode_to_sv(event.data[1]),
-                        1,
+                        0,
                         true,
                         write_handler(state));
                 };
@@ -1207,7 +1207,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             size,
                         },
-                        1,
+                        0,
                         true,
                         write_handler(state));
                 };
@@ -1239,7 +1239,9 @@ namespace b2h::device::xiaomi
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state_var.temp_val = (event.data[7] << 8) & event.data[8];
+                    state_var.temp_val =
+                        (static_cast<std::uint16_t>(event.data[8]) << 8) |
+                        event.data[7];
 
                     return state_var.cache.keep_warm_time != state_var.temp_val;
                 };
@@ -1266,7 +1268,7 @@ namespace b2h::device::xiaomi
                             buff.data(),
                             size,
                         },
-                        1,
+                        0,
                         true,
                         write_handler(state));
                 };
@@ -1583,8 +1585,8 @@ namespace b2h::device::xiaomi
                     "sub_warm_type"_s       + sml::event<events::sub_finished>   / sub_toab                    = "sub_toab"_s,
                     "sub_warm_type"_s       + sml::event<events::abort>                                        = "terminate"_s,
 
-                    "sub_toab"_s            + sml::event<events::sub_finished>   / mqtt_receive                 = "operate"_s,
-                    "sub_toab"_s            + sml::event<events::abort>                                         = "terminate"_s,
+                    "sub_toab"_s            + sml::event<events::sub_finished>   / mqtt_receive                = "operate"_s,
+                    "sub_toab"_s            + sml::event<events::abort>                                        = "terminate"_s,
 
                     // Configuration is finished, start normal operation.
                     
