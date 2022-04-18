@@ -57,6 +57,8 @@ namespace b2h::utils
         static constexpr std::size_t MAC_SIZE{ 6 };
         static constexpr std::size_t MAC_STR_SIZE{ 17 }; // MAC string size
 
+        using buffer_t = std::array<std::uint8_t, MAC_SIZE>;
+
         mac()           = default;
         mac(const mac&) = default;
         mac(mac&&)      = default;
@@ -65,13 +67,14 @@ namespace b2h::utils
         mac& operator=(mac&&) = default;
 
         template<typename OutIt>
-        void to_charbuf(OutIt first, OutIt last) const noexcept
+        std::optional<std::string_view> to_charbuf(
+            OutIt first, OutIt last) const noexcept
         {
             static_assert(impl::is_char_iter_v<OutIt>,
                 "Iterator value type must be char.");
-            assert(std::distance(first, last) == MAC_STR_SIZE);
 
-            fmt::format_to(first,
+            const auto [out, size] = fmt::format_to_n(first,
+                static_cast<std::size_t>(std::distance(first, last)),
                 "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
                 m_address[5],
                 m_address[4],
@@ -79,13 +82,20 @@ namespace b2h::utils
                 m_address[2],
                 m_address[1],
                 m_address[0]);
+
+            if (size == 0)
+            {
+                return std::nullopt;
+            }
+
+            return std::string_view{ &(*first), size };
         }
 
         std::string to_string() const;
 
-        const std::uint8_t* as_bytes() const noexcept
+        const buffer_t& as_bytes() const noexcept
         {
-            return m_address.data();
+            return m_address;
         }
 
         friend std::optional<mac> make_mac(const std::string_view str) noexcept;
@@ -94,7 +104,7 @@ namespace b2h::utils
         friend std::optional<mac> make_mac(InIt first, InIt last) noexcept;
 
     private:
-        std::array<std::uint8_t, MAC_SIZE> m_address;
+        buffer_t m_address;
     };
 
     std::optional<mac> make_mac(const std::string_view str) noexcept;
