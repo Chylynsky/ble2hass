@@ -35,7 +35,7 @@ namespace b2h::hass
         std::optional<bool> code_disarm_required;
         std::optional<bool> enabled_by_default;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> qos;
         std::optional<std::string_view> availability_mode;
         std::optional<std::string_view> availability_topic;
@@ -65,7 +65,7 @@ namespace b2h::hass
         std::string_view state_topic;
         std::optional<bool> enabled_by_default;
         std::optional<bool> force_update;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> expire_after;
         std::optional<int> off_delay;
         std::optional<int> qos;
@@ -91,7 +91,7 @@ namespace b2h::hass
     struct camera_type {
         std::string_view topic;
         std::optional<bool> enabled_by_default;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<std::string_view> availability_mode;
         std::optional<std::string_view> availability_topic;
         std::optional<std::string_view> entity_category;
@@ -110,7 +110,7 @@ namespace b2h::hass
         std::optional<bool> optimistic;
         std::optional<bool> retain;
         std::optional<bool> tilt_optimistic;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> position_closed;
         std::optional<int> position_open;
         std::optional<int> qos;
@@ -179,7 +179,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> qos;
         std::optional<int> speed_range_max;
         std::optional<int> speed_range_min;
@@ -226,7 +226,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> max_humidity;
         std::optional<int> min_humidity;
         std::optional<int> qos;
@@ -266,7 +266,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> brightness_scale;
         std::optional<int> max_mireds;
         std::optional<int> min_mireds;
@@ -321,7 +321,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> qos;
         std::optional<std::string_view> availability_mode;
         std::optional<std::string_view> availability_topic;
@@ -348,7 +348,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<double> max;
         std::optional<double> min;
         std::optional<double> step;
@@ -396,7 +396,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> qos;
         std::optional<std::string_view> availability_mode;
         std::optional<std::string_view> availability_topic;
@@ -417,7 +417,7 @@ namespace b2h::hass
         std::string_view state_topic;
         std::optional<bool> enabled_by_default;
         std::optional<bool> force_update;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> expire_after;
         std::optional<int> qos;
         std::optional<std::string_view> availability_mode;
@@ -444,7 +444,7 @@ namespace b2h::hass
         std::optional<bool> enabled_by_default;
         std::optional<bool> optimistic;
         std::optional<bool> retain;
-        std::optional<device_type*> device;
+        std::optional<device_type> device;
         std::optional<int> qos;
         std::optional<std::string_view> availability_mode;
         std::optional<std::string_view> availability_topic;

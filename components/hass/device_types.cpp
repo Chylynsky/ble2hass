@@ -22,6 +22,96 @@
 
 namespace b2h::hass
 {
+    namespace
+    {
+        inline void serialize_device_type(
+            const device_type& device, rapidjson::Document& doc)
+        {
+            using namespace rapidjson;
+
+            Value v(kObjectType);
+            if (device.manufacturer.has_value())
+            {
+                v.AddMember("mf",
+                    Value().SetString(
+                        StringRef(device.manufacturer.value().data(),
+                            device.manufacturer.value().size())),
+                    doc.GetAllocator());
+            }
+            if (device.model.has_value())
+            {
+                v.AddMember("mdl",
+                    Value().SetString(StringRef(device.model.value().data(),
+                        device.model.value().size())),
+                    doc.GetAllocator());
+            }
+            if (device.name.has_value())
+            {
+                v.AddMember("name",
+                    Value().SetString(StringRef(device.name.value().data(),
+                        device.name.value().size())),
+                    doc.GetAllocator());
+            }
+            if (device.suggested_area.has_value())
+            {
+                v.AddMember("sa",
+                    Value().SetString(
+                        StringRef(device.suggested_area.value().data(),
+                            device.suggested_area.value().size())),
+                    doc.GetAllocator());
+            }
+            if (device.sw_version.has_value())
+            {
+                v.AddMember("sw",
+                    Value().SetString(
+                        StringRef(device.sw_version.value().data(),
+                            device.sw_version.value().size())),
+                    doc.GetAllocator());
+            }
+            if (device.via_device.has_value())
+            {
+                v.AddMember("mf",
+                    Value().SetString(
+                        StringRef(device.via_device.value().data(),
+                            device.via_device.value().size())),
+                    doc.GetAllocator());
+            }
+            if (device.connections.has_value())
+            {
+                Value a;
+                a.SetArray();
+                for (const auto& [key, value] : device.connections.value())
+                {
+                    Value tuple;
+                    tuple.SetArray();
+
+                    tuple.PushBack(
+                        Value().SetString(StringRef(key.data(), key.size())),
+                        doc.GetAllocator());
+                    tuple.PushBack(Value().SetString(
+                                       StringRef(value.data(), value.size())),
+                        doc.GetAllocator());
+
+                    a.PushBack(tuple, doc.GetAllocator());
+                }
+                v.AddMember("cns", std::move(a), doc.GetAllocator());
+            }
+            if (device.identifiers.has_value())
+            {
+                Value a;
+                a.SetArray();
+                for (const auto& str : device.identifiers.value())
+                {
+                    a.PushBack(
+                        Value().SetString(StringRef(str.data(), str.size())),
+                        doc.GetAllocator());
+                }
+                v.AddMember("ids", std::move(a), doc.GetAllocator());
+            }
+            doc.AddMember("dev", std::move(v), doc.GetAllocator());
+        }
+    } // namespace
+
     rapidjson::Document serialize(
         const alarm_control_panel_type& device) noexcept
     {
@@ -62,82 +152,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.qos.has_value())
         {
@@ -330,82 +345,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.expire_after.has_value())
         {
@@ -562,82 +502,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.availability_mode.has_value())
         {
@@ -745,82 +610,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.position_closed.has_value())
         {
@@ -1153,82 +943,9 @@ namespace b2h::hass
         using namespace rapidjson;
         Document d;
         d.SetObject();
-        {
-            Value v(kObjectType);
-            if (device.device.manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.manufacturer.value().data(),
-                            device.device.manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.model.value().data(),
-                            device.device.model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.name.value().data(),
-                            device.device.name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(
-                        StringRef(device.device.suggested_area.value().data(),
-                            device.device.suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(
-                        StringRef(device.device.sw_version.value().data(),
-                            device.device.sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.via_device.value().data(),
-                            device.device.via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str : device.device.connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str : device.device.identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
-        }
+
+        serialize_device_type(device.device, d);
+
         d.AddMember("atype",
             Value().SetString(StringRef(device.automation_type.data(),
                 device.automation_type.size())),
@@ -1290,82 +1007,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.qos.has_value())
         {
@@ -1686,82 +1328,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.max_humidity.has_value())
         {
@@ -2028,82 +1595,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.brightness_scale.has_value())
         {
@@ -2494,82 +1986,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.qos.has_value())
         {
@@ -2738,82 +2155,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.max.has_value())
         {
@@ -3100,82 +2442,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.qos.has_value())
         {
@@ -3296,82 +2563,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.expire_after.has_value())
         {
@@ -3539,82 +2731,7 @@ namespace b2h::hass
         }
         if (device.device.has_value())
         {
-            Value v(kObjectType);
-            if (device.device.value()->manufacturer.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->manufacturer.value().data(),
-                        device.device.value()->manufacturer.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->model.has_value())
-            {
-                v.AddMember("mdl",
-                    Value().SetString(
-                        StringRef(device.device.value()->model.value().data(),
-                            device.device.value()->model.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->name.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(
-                        StringRef(device.device.value()->name.value().data(),
-                            device.device.value()->name.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->suggested_area.has_value())
-            {
-                v.AddMember("sa",
-                    Value().SetString(StringRef(
-                        device.device.value()->suggested_area.value().data(),
-                        device.device.value()->suggested_area.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->sw_version.has_value())
-            {
-                v.AddMember("sw",
-                    Value().SetString(StringRef(
-                        device.device.value()->sw_version.value().data(),
-                        device.device.value()->sw_version.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->via_device.has_value())
-            {
-                v.AddMember("mf",
-                    Value().SetString(StringRef(
-                        device.device.value()->via_device.value().data(),
-                        device.device.value()->via_device.value().size())),
-                    d.GetAllocator());
-            }
-            if (device.device.value()->connections.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->connections.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("cns", std::move(a), d.GetAllocator());
-            }
-            if (device.device.value()->identifiers.has_value())
-            {
-                Value a;
-                a.SetArray();
-                for (const auto& str :
-                    device.device.value()->identifiers.value())
-                {
-                    a.PushBack(
-                        Value().SetString(StringRef(str.data(), str.size())),
-                        d.GetAllocator());
-                }
-                v.AddMember("ids", std::move(a), d.GetAllocator());
-            }
-            d.AddMember("dev", std::move(v), d.GetAllocator());
+            serialize_device_type(device.device.value(), d);
         }
         if (device.qos.has_value())
         {

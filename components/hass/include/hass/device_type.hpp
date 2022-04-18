@@ -36,7 +36,8 @@ namespace b2h::hass
         std::optional<std::string_view> suggested_area;
         std::optional<std::string_view> sw_version;
         std::optional<std::string_view> via_device;
-        std::optional<tcb::span<std::string_view>> connections;
+        std::optional<tcb::span<std::pair<std::string_view, std::string_view>>>
+            connections;
         std::optional<tcb::span<std::string_view>> identifiers;
     };
 } // namespace b2h::hass
