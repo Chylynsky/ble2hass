@@ -35,6 +35,7 @@
 #include <variant>
 
 #include "boost/sml.hpp"
+#include "fmt/format.h"
 
 #include "host/ble_uuid.h"
 
@@ -72,32 +73,43 @@ namespace b2h::device::xiaomi
 
         static constexpr std::string_view COMPONENT{ "xiaomi::lywsd03mmc" };
 
-        static constexpr const char* TEMPERATURE_SENSOR_NAME{
+        static constexpr std::string_view DEVICE_NAME{
+            "Mi Temperature & Humidity Monitor 2"
+        };
+
+        static constexpr std::string_view DEVICE_MODEL{ "LYWSD03MMC" };
+
+        static constexpr std::string_view DEVICE_MANUFACTURER{ "Xiaomi" };
+
+        static constexpr std::string_view TEMPERATURE_SENSOR_NAME{
             "LYWSD03MMC Temperature"
         };
-        static constexpr const char* TEMPERATURE_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/lywsd03mmc_temperature/config"
+
+        static constexpr std::string_view TEMPERATURE_SENSOR_UNIQUE_ID_TMPL{
+            "lywsd03mmc_{}_temperature"
         };
-        static constexpr const char* TEMPERATURE_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/lywsd03mmc_temperature/state"
-        };
-        static constexpr const char* HUMIDITY_SENSOR_NAME{
+
+        static constexpr std::string_view HUMIDITY_SENSOR_NAME{
             "LYWSD03MMC Humidity"
         };
-        static constexpr const char* HUMIDITY_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/lywsd03mmc_humidity/config"
+
+        static constexpr std::string_view HUMIDITY_SENSOR_UNIQUE_ID_TMPL{
+            "lywsd03mmc_{}_humidity"
         };
-        static constexpr const char* HUMIDITY_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/lywsd03mmc_humidity/state"
-        };
-        static constexpr const char* BATTERY_SENSOR_NAME{
+
+        static constexpr std::string_view BATTERY_SENSOR_NAME{
             "LYWSD03MMC Battery"
         };
-        static constexpr const char* BATTERY_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/lywsd03mmc_battery/config"
+
+        static constexpr std::string_view BATTERY_SENSOR_UNIQUE_ID_TMPL{
+            "lywsd03mmc_{}_battery"
         };
-        static constexpr const char* BATTERY_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/lywsd03mmc_battery/state"
+
+        static constexpr std::string_view SENSOR_CONFIG_TOPIC_TMPL{
+            "homeassistant/sensor/{}/config"
+        };
+        static constexpr std::string_view SENSOR_STATE_TOPIC_TMPL{
+            "homeassistant/sensor/{}/state"
         };
 
         static constexpr ble_uuid128_t DATA_SRV{
@@ -144,19 +156,45 @@ namespace b2h::device::xiaomi
             },
         };
 
+        using topic_buffer_t     = std::array<char, 64>;
+        using unique_id_buffer_t = std::array<char, 35>;
+        using id_buffer_t        = std::array<char, 12>;
+        using meas_buffer_t      = std::array<char, 5>;
+
         struct lywsd03mmc_state {
+            struct configure {
+                using mac_buffer_t = std::array<char, utils::mac::MAC_STR_SIZE>;
+                using connection_tuple_t =
+                    std::pair<std::string_view, std::string_view>;
+                using connections_list_t = std::array<connection_tuple_t, 1>;
+
+                mac_buffer_t mac_buf;
+                connections_list_t conn;
+            };
+
+            struct operate {
+                std::uint16_t temperature;
+                std::uint16_t voltage;
+                std::uint8_t humidity;
+            };
+
             using external_event_variant_t =
                 std::variant<events::abort, events::srv_disced,
                     events::chrs_disced, events::write_finished>;
 
+            using state_variant_t =
+                std::variant<std::monostate, configure, operate>;
+
             ble::gatt::client& gatt_client;
             mqtt::client& mqtt_client;
 
-            std::uint16_t data_attr_handle;
+            topic_buffer_t temp_sens_topic;
+            topic_buffer_t hum_sens_topic;
+            topic_buffer_t batt_sens_topic;
 
-            float temperature;
-            int humidity;
-            float voltage;
+            state_variant_t state_var;
+
+            std::uint16_t data_attr_handle;
 
             std::function<void(external_event_variant_t)>
                 process_external_event;
@@ -167,7 +205,8 @@ namespace b2h::device::xiaomi
             {
                 using namespace boost::sml;
 
-                namespace sml = boost::sml;
+                namespace sml = boost::sml; // ambiguity between
+                                            // boost::sml::event and b2h::event
 
                 const auto find_by_uuid = [](const auto& cont,
                                               const auto& uuid) {
@@ -177,6 +216,83 @@ namespace b2h::device::xiaomi
                             return ::ble_uuid_cmp(&attr.uuid.u, &uuid.u) == 0;
                         });
                 };
+
+                const auto mac_to_id = [](const utils::mac& mac,
+                                           id_buffer_t& buf) {
+                    const std::uint8_t* mac_bytes = mac.as_bytes();
+                    const auto [out, size] = fmt::format_to_n(buf.begin(),
+                        buf.size(),
+                        "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+                        mac_bytes[5],
+                        mac_bytes[4],
+                        mac_bytes[3],
+                        mac_bytes[2],
+                        mac_bytes[1],
+                        mac_bytes[0]);
+
+                    return std::string_view{ buf.data(), size };
+                };
+
+                const auto make_unique_id = [=](const std::string_view tmpl,
+                                                const utils::mac& mac,
+                                                unique_id_buffer_t& buf) {
+                    id_buffer_t id_buf{};
+                    const auto [out, size] = fmt::format_to_n(buf.begin(),
+                        buf.size(),
+                        tmpl,
+                        mac_to_id(mac, id_buf));
+
+                    return std::string_view{ buf.data(), size };
+                };
+
+                const auto make_topic =
+                    [=](const std::string_view topic_tmpl,
+                        const std::string_view unique_id_tmpl,
+                        const utils::mac& mac,
+                        topic_buffer_t& buf) {
+                        unique_id_buffer_t unique_id_buf{};
+
+                        const auto [out, size] = fmt::format_to_n(buf.begin(),
+                            buf.size() - 1,
+                            topic_tmpl,
+                            make_unique_id(unique_id_tmpl, mac, unique_id_buf));
+
+                        assert(size != buf.size());
+                        *out = '\0';
+                        return buf.data();
+                    };
+
+                const auto make_state_topic =
+                    [=](const std::string_view unique_id_tmpl,
+                        const utils::mac& mac,
+                        topic_buffer_t& buf) {
+                        return make_topic(SENSOR_STATE_TOPIC_TMPL,
+                            unique_id_tmpl,
+                            mac,
+                            buf);
+                    };
+
+                const auto make_config_topic =
+                    [=](const std::string_view unique_id_tmpl,
+                        const utils::mac& mac,
+                        topic_buffer_t& buf) {
+                        return make_topic(SENSOR_CONFIG_TOPIC_TMPL,
+                            unique_id_tmpl,
+                            mac,
+                            buf);
+                    };
+
+                const auto make_hass_device =
+                    [](lywsd03mmc_state::configure& state) {
+                        hass::device_type device;
+
+                        device.name         = DEVICE_NAME;
+                        device.model        = DEVICE_MODEL;
+                        device.manufacturer = DEVICE_MANUFACTURER;
+                        device.connections  = tcb::make_span(state.conn);
+
+                        return device;
+                    };
 
                 const auto write_handler = [](lywsd03mmc_state& state) {
                     return [&](auto&& result) {
@@ -192,7 +308,33 @@ namespace b2h::device::xiaomi
                     };
                 };
 
-                const auto on_start = [](lywsd03mmc_state& state) {
+                auto on_start = [=](lywsd03mmc_state& state) mutable {
+                    using namespace std::literals;
+
+                    const utils::mac& mac = state.gatt_client.mac();
+
+                    auto& state_var =
+                        state.state_var
+                            .template emplace<lywsd03mmc_state::configure>();
+
+                    state_var.conn[0].first = "mac"sv;
+                    state_var.conn[0].second =
+                        mac.to_charbuf(state_var.mac_buf.begin(),
+                               state_var.mac_buf.end())
+                            .value();
+
+                    make_state_topic(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
+                        mac,
+                        state.temp_sens_topic);
+
+                    make_state_topic(HUMIDITY_SENSOR_UNIQUE_ID_TMPL,
+                        mac,
+                        state.hum_sens_topic);
+
+                    make_state_topic(BATTERY_SENSOR_UNIQUE_ID_TMPL,
+                        mac,
+                        state.batt_sens_topic);
+
                     state.gatt_client.async_discover_service_by_uuid(
                         &DATA_SRV.u,
                         [&](auto&& result) {
@@ -260,52 +402,118 @@ namespace b2h::device::xiaomi
                         });
                 };
 
-                const auto on_data_subscribe = [=](lywsd03mmc_state& state) {
-                    hass::sensor_type temperature_sensor;
-                    temperature_sensor.state_topic =
-                        TEMPERATURE_SENSOR_STATE_TOPIC;
-                    temperature_sensor.name         = TEMPERATURE_SENSOR_NAME;
-                    temperature_sensor.device_class = "temperature";
-                    temperature_sensor.unit_of_measurement = "°C";
-                    temperature_sensor.qos                 = 0;
+                auto on_data_subscribe = [=](lywsd03mmc_state& state) mutable {
+                    using namespace std::literals;
+
+                    const utils::mac& mac = state.gatt_client.mac();
+
+                    topic_buffer_t topic_buf;
+                    unique_id_buffer_t unique_id_buf{};
+                    hass::sensor_type sens;
+
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::configure>(state.state_var);
+
+                    sens.device              = make_hass_device(state_var);
+                    sens.state_topic         = state.temp_sens_topic.data();
+                    sens.name                = TEMPERATURE_SENSOR_NAME;
+                    sens.device_class        = "temperature"sv;
+                    sens.unit_of_measurement = "°C"sv;
+                    sens.qos                 = 0;
+                    sens.unique_id =
+                        make_unique_id(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
+                            mac,
+                            unique_id_buf);
+                    sens.value_template =
+                        "{{ ((value_json | float(0)) * 0.01) | round(2) }}"sv;
 
                     state.mqtt_client.async_publish(
-                        TEMPERATURE_SENSOR_CONFIG_TOPIC,
-                        utils::json::dump(hass::serialize(temperature_sensor)),
+                        make_config_topic(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
+                            mac,
+                            topic_buf),
+                        utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
                         write_handler(state));
                 };
 
-                const auto on_conf_temp_sens = [=](lywsd03mmc_state& state) {
-                    hass::sensor_type humidity_sensor;
-                    humidity_sensor.state_topic  = HUMIDITY_SENSOR_STATE_TOPIC;
-                    humidity_sensor.name         = HUMIDITY_SENSOR_NAME;
-                    humidity_sensor.device_class = "humidity";
-                    humidity_sensor.unit_of_measurement = "%";
-                    humidity_sensor.qos                 = 0;
+                auto on_conf_temp_sens = [=](lywsd03mmc_state& state) mutable {
+                    using namespace std::literals;
+
+                    const utils::mac& mac = state.gatt_client.mac();
+
+                    topic_buffer_t topic_buf;
+                    unique_id_buffer_t unique_id_buf{};
+                    hass::sensor_type sens;
+
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::configure>(state.state_var);
+
+                    sens.device              = make_hass_device(state_var);
+                    sens.state_topic         = state.hum_sens_topic.data();
+                    sens.name                = HUMIDITY_SENSOR_NAME;
+                    sens.device_class        = "humidity"sv;
+                    sens.unit_of_measurement = "%"sv;
+                    sens.qos                 = 0;
+                    sens.unique_id =
+                        make_unique_id(HUMIDITY_SENSOR_UNIQUE_ID_TMPL,
+                            mac,
+                            unique_id_buf);
 
                     state.mqtt_client.async_publish(
-                        HUMIDITY_SENSOR_CONFIG_TOPIC,
-                        utils::json::dump(hass::serialize(humidity_sensor)),
+                        make_config_topic(HUMIDITY_SENSOR_UNIQUE_ID_TMPL,
+                            mac,
+                            topic_buf),
+                        utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
                         write_handler(state));
                 };
 
-                const auto on_conf_humi_sens = [=](lywsd03mmc_state& state) {
-                    hass::sensor_type battery_sensor;
-                    battery_sensor.state_topic  = BATTERY_SENSOR_STATE_TOPIC;
-                    battery_sensor.name         = BATTERY_SENSOR_NAME;
-                    battery_sensor.device_class = "voltage";
-                    battery_sensor.unit_of_measurement = "V";
-                    battery_sensor.qos                 = 0;
+                auto on_conf_humi_sens = [=](lywsd03mmc_state& state) mutable {
+                    using namespace std::literals;
 
-                    state.mqtt_client.async_publish(BATTERY_SENSOR_CONFIG_TOPIC,
-                        utils::json::dump(hass::serialize(battery_sensor)),
+                    const utils::mac& mac = state.gatt_client.mac();
+
+                    topic_buffer_t topic_buf;
+                    unique_id_buffer_t unique_id_buf{};
+                    hass::sensor_type sens;
+
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::configure>(state.state_var);
+
+                    sens.device              = make_hass_device(state_var);
+                    sens.state_topic         = state.batt_sens_topic.data();
+                    sens.name                = BATTERY_SENSOR_NAME;
+                    sens.device_class        = "battery"sv;
+                    sens.unit_of_measurement = "%"sv;
+                    sens.qos                 = 0;
+                    sens.unique_id =
+                        make_unique_id(BATTERY_SENSOR_UNIQUE_ID_TMPL,
+                            mac,
+                            unique_id_buf);
+                    sens.value_template =
+                        "{% if value_json >= 3000 %}"
+                        "{{ 100 }}"
+                        "{% elif value_json <= 2100 %}"
+                        "{{ 0 }}"
+                        "{% else %}"
+                        "{{ (100.0 * (((value_json | float(0)) - 2100.0) / 900.0)) | round(0) }}"
+                        "{% endif %}"sv;
+
+                    state.mqtt_client.async_publish(
+                        make_config_topic(BATTERY_SENSOR_UNIQUE_ID_TMPL,
+                            mac,
+                            topic_buf),
+                        utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
                         write_handler(state));
+                };
+
+                const auto set_operate = [](lywsd03mmc_state& state) {
+                    state.state_var
+                        .template emplace<lywsd03mmc_state::operate>();
                 };
 
                 const auto is_data_handle = [](lywsd03mmc_state& state,
@@ -315,33 +523,36 @@ namespace b2h::device::xiaomi
 
                 const auto is_temp_upd = [](lywsd03mmc_state& state,
                                              const events::notify& event) {
-                    const float temperature =
-                        static_cast<float>(
-                            (static_cast<std::uint16_t>(event.data[1]) << 8) |
-                            event.data[0]) *
-                        0.01f;
+                    const std::uint16_t temperature =
+                        (static_cast<std::uint16_t>(event.data[1]) << 8) |
+                        event.data[0];
 
-                    if (temperature == state.temperature)
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::operate>(state.state_var);
+
+                    if (temperature == state_var.temperature)
                     {
                         return false;
                     }
 
-                    state.temperature = temperature;
+                    state_var.temperature = temperature;
                     return true;
                 };
 
                 const auto upd_temp = [=](lywsd03mmc_state& state) {
-                    using buff_t = std::array<char, 6>;
+                    using namespace std::literals;
 
-                    buff_t buff;
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::operate>(state.state_var);
+                    meas_buffer_t buff;
 
                     const auto [iter, size] = fmt::format_to_n(buff.begin(),
                         buff.size(),
-                        "{:.1f}",
-                        state.temperature);
+                        "{}",
+                        state_var.temperature);
 
                     state.mqtt_client.async_publish(
-                        TEMPERATURE_SENSOR_STATE_TOPIC,
+                        state.temp_sens_topic.data(),
                         std::string_view{
                             buff.data(),
                             size,
@@ -353,26 +564,29 @@ namespace b2h::device::xiaomi
 
                 const auto is_hum_upd = [](lywsd03mmc_state& state,
                                             const events::notify& event) {
-                    if (state.humidity == event.data[2])
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::operate>(state.state_var);
+
+                    if (state_var.humidity == event.data[2])
                     {
                         return false;
                     }
 
-                    state.humidity = event.data[2];
+                    state_var.humidity = event.data[2];
                     return true;
                 };
 
                 const auto upd_hum = [=](lywsd03mmc_state& state) {
-                    using buff_t = std::array<char, 4>;
-
-                    buff_t buff;
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::operate>(state.state_var);
+                    meas_buffer_t buff;
 
                     const auto [iter, size] = fmt::format_to_n(buff.begin(),
                         buff.size(),
                         "{}",
-                        state.humidity);
+                        state_var.humidity);
 
-                    state.mqtt_client.async_publish(HUMIDITY_SENSOR_STATE_TOPIC,
+                    state.mqtt_client.async_publish(state.hum_sens_topic.data(),
                         std::string_view{
                             buff.data(),
                             size,
@@ -384,32 +598,34 @@ namespace b2h::device::xiaomi
 
                 const auto is_batt_upd = [](lywsd03mmc_state& state,
                                              const events::notify& event) {
-                    const float voltage =
-                        static_cast<float>(
-                            (static_cast<std::uint16_t>(event.data[4]) << 8) |
-                            event.data[3]) *
-                        0.001f;
+                    const std::uint16_t voltage =
+                        (static_cast<std::uint16_t>(event.data[4]) << 8) |
+                        event.data[3];
 
-                    if (state.voltage == voltage)
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::operate>(state.state_var);
+
+                    if (state_var.voltage == voltage)
                     {
                         return false;
                     }
 
-                    state.voltage = voltage;
+                    state_var.voltage = voltage;
                     return true;
                 };
 
                 const auto upd_batt = [=](lywsd03mmc_state& state) {
-                    using buff_t = std::array<char, 3>;
-
-                    buff_t buff;
+                    auto& state_var =
+                        std::get<lywsd03mmc_state::operate>(state.state_var);
+                    meas_buffer_t buff;
 
                     const auto [iter, size] = fmt::format_to_n(buff.begin(),
                         buff.size(),
-                        "{:.1f}",
-                        state.voltage);
+                        "{}",
+                        state_var.voltage);
 
-                    state.mqtt_client.async_publish(BATTERY_SENSOR_STATE_TOPIC,
+                    state.mqtt_client.async_publish(
+                        state.batt_sens_topic.data(),
                         std::string_view{
                             buff.data(),
                             size,
@@ -443,8 +659,8 @@ namespace b2h::device::xiaomi
                     "conf_humi_sens"_s + sml::event<events::write_finished> / on_conf_humi_sens = "conf_batt_sens"_s,
                     "conf_humi_sens"_s + sml::event<events::abort>                              = "terminate"_s,
 
-                    "conf_batt_sens"_s + sml::event<events::write_finished> = "operate"_s,
-                    "conf_batt_sens"_s + sml::event<events::abort>          = "terminate"_s,
+                    "conf_batt_sens"_s + sml::event<events::write_finished> / set_operate = "operate"_s,
+                    "conf_batt_sens"_s + sml::event<events::abort>                        = "terminate"_s,
             
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_batt_upd] / upd_batt = "param_write"_s,
                     "operate"_s + sml::event<events::notify> [is_data_handle && is_hum_upd]  / upd_hum  = "param_write"_s,

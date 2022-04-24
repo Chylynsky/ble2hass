@@ -28,10 +28,11 @@ namespace b2h::device::xiaomi
         m_state{
             this->gatt_client(),
             this->mqtt_client(),
+            {},
+            {},
+            {},
+            {},
             0U,
-            0.0f,
-            0,
-            0.0f,
             make_process_external_event(),
         },
         m_fsm{ m_state }
