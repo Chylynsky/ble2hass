@@ -34,4 +34,4 @@ set(REQUIRED_LIBS
 )
 
 target_link_libraries(${COMPONENT_LIB} PRIVATE ${REQUIRED_LIBS})
-target_compile_definitions(${COMPONENT_LIB} INTERFACE B2H_LOG_LEVEL=log_level::none)
+target_compile_definitions(${COMPONENT_LIB} INTERFACE B2H_LOG_LEVEL=none)

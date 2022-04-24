@@ -25,7 +25,7 @@
 #include "fmt/format.h"
 
 #ifndef B2H_LOG_LEVEL
-#define B2H_LOG_LEVEL log_level::verbose
+#define B2H_LOG_LEVEL none
 #endif
 
 namespace b2h::log
@@ -47,7 +47,7 @@ namespace b2h::log
     inline constexpr auto INFO_COLOR     = fmt::color::green;
     inline constexpr auto VERBOSE_COLOR  = fmt::color::light_gray;
 
-    inline constexpr auto GLOBAL_LOG_LEVEL = B2H_LOG_LEVEL;
+    inline constexpr auto GLOBAL_LOG_LEVEL = log_level::B2H_LOG_LEVEL;
 
     template<typename... ArgsT>
     inline void verbose([[maybe_unused]] std::string_view component,
