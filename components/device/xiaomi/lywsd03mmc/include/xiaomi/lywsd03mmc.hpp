@@ -219,7 +219,7 @@ namespace b2h::device::xiaomi
 
                 const auto mac_to_id = [](const utils::mac& mac,
                                            id_buffer_t& buf) {
-                    const std::uint8_t* mac_bytes = mac.as_bytes();
+                    const auto mac_bytes   = mac.as_bytes();
                     const auto [out, size] = fmt::format_to_n(buf.begin(),
                         buf.size(),
                         "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",

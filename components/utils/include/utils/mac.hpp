@@ -93,9 +93,9 @@ namespace b2h::utils
 
         std::string to_string() const;
 
-        const buffer_t& as_bytes() const noexcept
+        tcb::span<const std::uint8_t> as_bytes() const noexcept
         {
-            return m_address;
+            return tcb::make_span(m_address);
         }
 
         friend std::optional<mac> make_mac(const std::string_view str) noexcept;

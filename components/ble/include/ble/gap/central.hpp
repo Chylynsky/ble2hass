@@ -99,15 +99,17 @@ namespace b2h
             {
                 namespace events = events::ble::gap;
 
+                const auto mac_bytes = addr.as_bytes();
+
                 const ::ble_addr_t addr_internal{
                     BLE_ADDR_PUBLIC,
                     {
-                        *addr.as_bytes(),
-                        *(addr.as_bytes() + 1),
-                        *(addr.as_bytes() + 2),
-                        *(addr.as_bytes() + 3),
-                        *(addr.as_bytes() + 4),
-                        *(addr.as_bytes() + 5),
+                        mac_bytes[0],
+                        mac_bytes[1],
+                        mac_bytes[2],
+                        mac_bytes[3],
+                        mac_bytes[4],
+                        mac_bytes[5],
                     },
                 };
 

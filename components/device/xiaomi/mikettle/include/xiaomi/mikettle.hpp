@@ -781,11 +781,11 @@ namespace b2h::device::xiaomi
 
                 const auto on_auth_subscribe = [=](mikettle_state& state) {
                     auto reversed_mac{
-                        utils::make_mac(std::make_reverse_iterator(
-                                            state.gatt_client.mac().as_bytes() +
-                                            utils::mac::MAC_SIZE),
+                        utils::make_mac(
                             std::make_reverse_iterator(
-                                state.gatt_client.mac().as_bytes()))
+                                state.gatt_client.mac().as_bytes().end()),
+                            std::make_reverse_iterator(
+                                state.gatt_client.mac().as_bytes().begin()))
                             .value(),
                     };
 
