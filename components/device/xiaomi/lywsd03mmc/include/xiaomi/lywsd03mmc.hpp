@@ -24,12 +24,14 @@
 #include "ble/gatt/client.hpp"
 #include "device/base.hpp"
 #include "hass/device_types.hpp"
+#include "hass/topic_templates.hpp"
 #include "mqtt/client.hpp"
 #include "utils/json.hpp"
 #include "utils/logger.hpp"
 
 #include <array>
 #include <functional>
+#include <memory>
 #include <queue>
 #include <thread>
 #include <variant>
@@ -71,48 +73,41 @@ namespace b2h::device::xiaomi
             };
         } // namespace events
 
-        static constexpr std::string_view COMPONENT{ "xiaomi::lywsd03mmc" };
+        inline constexpr std::string_view COMPONENT{ "lywsd03mmc" };
 
-        static constexpr std::string_view DEVICE_NAME{
+        inline constexpr std::string_view DEVICE_NAME{
             "Mi Temperature & Humidity Monitor 2"
         };
 
-        static constexpr std::string_view DEVICE_MODEL{ "LYWSD03MMC" };
+        inline constexpr std::string_view DEVICE_MODEL{ "LYWSD03MMC" };
 
-        static constexpr std::string_view DEVICE_MANUFACTURER{ "Xiaomi" };
+        inline constexpr std::string_view DEVICE_MANUFACTURER{ "Xiaomi" };
 
-        static constexpr std::string_view TEMPERATURE_SENSOR_NAME{
+        inline constexpr std::string_view TEMPERATURE_SENSOR_NAME{
             "LYWSD03MMC Temperature"
         };
 
-        static constexpr std::string_view TEMPERATURE_SENSOR_UNIQUE_ID_TMPL{
+        inline constexpr std::string_view TEMPERATURE_SENSOR_UNIQUE_ID_TMPL{
             "lywsd03mmc_{}_temperature"
         };
 
-        static constexpr std::string_view HUMIDITY_SENSOR_NAME{
+        inline constexpr std::string_view HUMIDITY_SENSOR_NAME{
             "LYWSD03MMC Humidity"
         };
 
-        static constexpr std::string_view HUMIDITY_SENSOR_UNIQUE_ID_TMPL{
+        inline constexpr std::string_view HUMIDITY_SENSOR_UNIQUE_ID_TMPL{
             "lywsd03mmc_{}_humidity"
         };
 
-        static constexpr std::string_view BATTERY_SENSOR_NAME{
+        inline constexpr std::string_view BATTERY_SENSOR_NAME{
             "LYWSD03MMC Battery"
         };
 
-        static constexpr std::string_view BATTERY_SENSOR_UNIQUE_ID_TMPL{
+        inline constexpr std::string_view BATTERY_SENSOR_UNIQUE_ID_TMPL{
             "lywsd03mmc_{}_battery"
         };
 
-        static constexpr std::string_view SENSOR_CONFIG_TOPIC_TMPL{
-            "homeassistant/sensor/{}/config"
-        };
-        static constexpr std::string_view SENSOR_STATE_TOPIC_TMPL{
-            "homeassistant/sensor/{}/state"
-        };
-
-        static constexpr ble_uuid128_t DATA_SRV{
+        inline constexpr ble_uuid128_t DATA_SRV{
             BLE_UUID_TYPE_128,
             {
                 0xa6,
@@ -134,7 +129,7 @@ namespace b2h::device::xiaomi
             },
         };
 
-        static constexpr ble_uuid128_t DATA_CHR{
+        inline constexpr ble_uuid128_t DATA_CHR{
             BLE_UUID_TYPE_128,
             {
                 0xa6,
@@ -163,12 +158,11 @@ namespace b2h::device::xiaomi
 
         struct lywsd03mmc_state {
             struct configure {
-                using mac_buffer_t = std::array<char, utils::mac::MAC_STR_SIZE>;
                 using connection_tuple_t =
                     std::pair<std::string_view, std::string_view>;
                 using connections_list_t = std::array<connection_tuple_t, 1>;
 
-                mac_buffer_t mac_buf;
+                std::string mac_buf;
                 connections_list_t conn;
             };
 
@@ -182,21 +176,20 @@ namespace b2h::device::xiaomi
                 std::variant<events::abort, events::srv_disced,
                     events::chrs_disced, events::write_finished>;
 
-            using state_variant_t =
-                std::variant<std::monostate, configure, operate>;
+            using state_variant_t = std::variant<configure, operate>;
 
-            ble::gatt::client& gatt_client;
-            mqtt::client& mqtt_client;
+            std::reference_wrapper<ble::gatt::client> gatt_client;
+            std::reference_wrapper<mqtt::client> mqtt_client;
 
-            topic_buffer_t temp_sens_topic;
-            topic_buffer_t hum_sens_topic;
-            topic_buffer_t batt_sens_topic;
+            std::string temp_sens_topic;
+            std::string hum_sens_topic;
+            std::string batt_sens_topic;
 
             state_variant_t state_var;
 
             std::uint16_t data_attr_handle;
 
-            std::function<void(external_event_variant_t)>
+            std::function<void(const external_event_variant_t&)>
                 process_external_event;
         };
 
@@ -264,19 +257,17 @@ namespace b2h::device::xiaomi
 
                 const auto make_state_topic =
                     [=](const std::string_view unique_id_tmpl,
-                        const utils::mac& mac,
-                        topic_buffer_t& buf) {
-                        return make_topic(SENSOR_STATE_TOPIC_TMPL,
-                            unique_id_tmpl,
-                            mac,
-                            buf);
-                    };
+                        const utils::mac& mac) -> std::string {
+                    unique_id_buffer_t unique_id_buf{};
+                    return fmt::format(hass::SENSOR_STATE_TOPIC_TMPL,
+                        make_unique_id(unique_id_tmpl, mac, unique_id_buf));
+                };
 
                 const auto make_config_topic =
                     [=](const std::string_view unique_id_tmpl,
                         const utils::mac& mac,
                         topic_buffer_t& buf) {
-                        return make_topic(SENSOR_CONFIG_TOPIC_TMPL,
+                        return make_topic(hass::SENSOR_CFG_TOPIC_TMPL,
                             unique_id_tmpl,
                             mac,
                             buf);
@@ -311,31 +302,27 @@ namespace b2h::device::xiaomi
                 auto on_start = [=](lywsd03mmc_state& state) mutable {
                     using namespace std::literals;
 
-                    const utils::mac& mac = state.gatt_client.mac();
+                    const utils::mac& mac = state.gatt_client.get().mac();
 
                     auto& state_var =
-                        state.state_var
-                            .template emplace<lywsd03mmc_state::configure>();
+                        std::get<lywsd03mmc_state::configure>(state.state_var);
 
-                    state_var.conn[0].first = "mac"sv;
-                    state_var.conn[0].second =
-                        mac.to_charbuf(state_var.mac_buf.begin(),
-                               state_var.mac_buf.end())
-                            .value();
+                    state_var.mac_buf = mac.to_string();
 
-                    make_state_topic(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
-                        mac,
-                        state.temp_sens_topic);
+                    state_var.conn[0].first  = "mac"sv;
+                    state_var.conn[0].second = state_var.mac_buf;
 
-                    make_state_topic(HUMIDITY_SENSOR_UNIQUE_ID_TMPL,
-                        mac,
-                        state.hum_sens_topic);
+                    state.temp_sens_topic =
+                        make_state_topic(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
+                            mac);
 
-                    make_state_topic(BATTERY_SENSOR_UNIQUE_ID_TMPL,
-                        mac,
-                        state.batt_sens_topic);
+                    state.hum_sens_topic =
+                        make_state_topic(HUMIDITY_SENSOR_UNIQUE_ID_TMPL, mac);
 
-                    state.gatt_client.async_discover_service_by_uuid(
+                    state.batt_sens_topic =
+                        make_state_topic(BATTERY_SENSOR_UNIQUE_ID_TMPL, mac);
+
+                    state.gatt_client.get().async_discover_service_by_uuid(
                         &DATA_SRV.u,
                         [&](auto&& result) {
                             if (!result.has_value() || result.value().empty())
@@ -353,7 +340,7 @@ namespace b2h::device::xiaomi
 
                 const auto on_srv_disced = [](lywsd03mmc_state& state,
                                                events::srv_disced event) {
-                    state.gatt_client.async_discover_characteristics(
+                    state.gatt_client.get().async_discover_characteristics(
                         event.services.front(),
                         [&](auto&& result) {
                             if (!result.has_value() || result.value().empty())
@@ -386,7 +373,8 @@ namespace b2h::device::xiaomi
 
                     const std::array<std::uint8_t, 2> subscribe{ 1, 0 };
 
-                    return state.gatt_client.async_write(state.data_attr_handle,
+                    return state.gatt_client.get().async_write(
+                        state.data_attr_handle,
                         subscribe,
                         [=](auto&& result) {
                             if (!result.has_value())
@@ -405,7 +393,7 @@ namespace b2h::device::xiaomi
                 auto on_data_subscribe = [=](lywsd03mmc_state& state) mutable {
                     using namespace std::literals;
 
-                    const utils::mac& mac = state.gatt_client.mac();
+                    const utils::mac& mac = state.gatt_client.get().mac();
 
                     topic_buffer_t topic_buf;
                     unique_id_buffer_t unique_id_buf{};
@@ -427,7 +415,7 @@ namespace b2h::device::xiaomi
                     sens.value_template =
                         "{{ ((value_json | float(0)) * 0.01) | round(2) }}"sv;
 
-                    state.mqtt_client.async_publish(
+                    state.mqtt_client.get().async_publish(
                         make_config_topic(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
                             mac,
                             topic_buf),
@@ -440,7 +428,7 @@ namespace b2h::device::xiaomi
                 auto on_conf_temp_sens = [=](lywsd03mmc_state& state) mutable {
                     using namespace std::literals;
 
-                    const utils::mac& mac = state.gatt_client.mac();
+                    const utils::mac& mac = state.gatt_client.get().mac();
 
                     topic_buffer_t topic_buf;
                     unique_id_buffer_t unique_id_buf{};
@@ -460,7 +448,7 @@ namespace b2h::device::xiaomi
                             mac,
                             unique_id_buf);
 
-                    state.mqtt_client.async_publish(
+                    state.mqtt_client.get().async_publish(
                         make_config_topic(HUMIDITY_SENSOR_UNIQUE_ID_TMPL,
                             mac,
                             topic_buf),
@@ -473,7 +461,7 @@ namespace b2h::device::xiaomi
                 auto on_conf_humi_sens = [=](lywsd03mmc_state& state) mutable {
                     using namespace std::literals;
 
-                    const utils::mac& mac = state.gatt_client.mac();
+                    const utils::mac& mac = state.gatt_client.get().mac();
 
                     topic_buffer_t topic_buf;
                     unique_id_buffer_t unique_id_buf{};
@@ -501,7 +489,7 @@ namespace b2h::device::xiaomi
                         "{{ (100.0 * (((value_json | float(0)) - 2100.0) / 900.0)) | round(0) }}"
                         "{% endif %}"sv;
 
-                    state.mqtt_client.async_publish(
+                    state.mqtt_client.get().async_publish(
                         make_config_topic(BATTERY_SENSOR_UNIQUE_ID_TMPL,
                             mac,
                             topic_buf),
@@ -551,7 +539,7 @@ namespace b2h::device::xiaomi
                         "{}",
                         state_var.temperature);
 
-                    state.mqtt_client.async_publish(
+                    state.mqtt_client.get().async_publish(
                         state.temp_sens_topic.data(),
                         std::string_view{
                             buff.data(),
@@ -586,7 +574,8 @@ namespace b2h::device::xiaomi
                         "{}",
                         state_var.humidity);
 
-                    state.mqtt_client.async_publish(state.hum_sens_topic.data(),
+                    state.mqtt_client.get().async_publish(
+                        state.hum_sens_topic.data(),
                         std::string_view{
                             buff.data(),
                             size,
@@ -624,7 +613,7 @@ namespace b2h::device::xiaomi
                         "{}",
                         state_var.voltage);
 
-                    state.mqtt_client.async_publish(
+                    state.mqtt_client.get().async_publish(
                         state.batt_sens_topic.data(),
                         std::string_view{
                             buff.data(),
@@ -637,7 +626,7 @@ namespace b2h::device::xiaomi
 
                 const auto on_abort_conn = [](lywsd03mmc_state& state) {
                     log::warning(COMPONENT, "Terminating BLE connection.");
-                    state.gatt_client.terminate();
+                    state.gatt_client.get().terminate();
                 };
 
                 // clang-format off
@@ -683,20 +672,20 @@ namespace b2h::device::xiaomi
     class lywsd03mmc final : public base
     {
     public:
-        lywsd03mmc(std::unique_ptr<mqtt::client>&& mqtt_client,
-            std::unique_ptr<ble::gatt::client>&& gatt_client) noexcept;
+        lywsd03mmc(
+            mqtt::client mqtt_client, ble::gatt::client gatt_client) noexcept;
 
         lywsd03mmc()                  = delete;
         lywsd03mmc(const lywsd03mmc&) = delete;
-        lywsd03mmc(lywsd03mmc&&)      = default;
-        ~lywsd03mmc()                 = default;
+        lywsd03mmc(lywsd03mmc&&);
+        ~lywsd03mmc() = default;
 
         lywsd03mmc& operator=(const lywsd03mmc&) = delete;
-        lywsd03mmc& operator=(lywsd03mmc&&) = default;
+        lywsd03mmc& operator=(lywsd03mmc&&) = delete;
 
-        void on_connected() noexcept override;
-        void on_notify(std::uint16_t attribute_handle,
-            std::vector<std::uint8_t>&& data) noexcept override;
+        void on_connected() override;
+        void on_notify(const std::uint16_t attribute_handle,
+            std::vector<std::uint8_t>&& data) override;
 
     private:
         using fsm_t = boost::sml::sm<lywsd03mmc_impl::lywsd03mmc_fsm,
@@ -706,7 +695,7 @@ namespace b2h::device::xiaomi
         lywsd03mmc_impl::lywsd03mmc_state m_state;
         fsm_t m_fsm;
 
-        auto make_process_external_event()
+        auto make_process_external_event() noexcept
         {
             using external_event_variant_t =
                 lywsd03mmc_impl::lywsd03mmc_state::external_event_variant_t;

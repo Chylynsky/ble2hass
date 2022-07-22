@@ -65,6 +65,42 @@ namespace b2h
 
     namespace mqtt
     {
+        namespace impl
+        {
+            struct client_state {
+                // clang-format off
+                using dispatcher_type = event::dispatcher<
+                    b2h::events::mqtt::connect,
+                    b2h::events::mqtt::data,
+                    b2h::events::mqtt::disconnect,
+                    b2h::events::mqtt::publish,
+                    b2h::events::mqtt::subscribe,
+                    b2h::events::mqtt::unsubscribe
+                >;
+
+                using receiver_type = typename dispatcher_type::receiver_type;
+
+                using handle_ptr = std::unique_ptr<
+                    esp_mqtt_client, 
+                    decltype(&::esp_mqtt_client_destroy)
+                >;
+                // clang-format on
+
+                client_state(event::context& context) :
+                    m_dispatcher{ context },
+                    m_receiver{ m_dispatcher.make_receiver() }
+                {
+                }
+
+                dispatcher_type m_dispatcher;
+                receiver_type m_receiver;
+
+                std::array<char, 3> id_buff = {};
+                handle_ptr m_handle  = { nullptr, &::esp_mqtt_client_destroy };
+                std::string m_buffer = {};
+            };
+        } // namespace impl
+
         struct config {
             std::string uri;
             std::string username;
@@ -83,17 +119,17 @@ namespace b2h
 
             client(const client&) = delete;
 
-            client(client&& other) = delete;
+            client(client&& other) = default;
 
             client& operator=(const client&) = delete;
 
-            client& operator=(client&& other) = delete;
+            client& operator=(client&& other) = default;
 
             ~client() = default;
 
             auto& receiver() noexcept
             {
-                return m_receiver;
+                return m_state->m_receiver;
             }
 
             tl::expected<void, esp_err_t> config(const config& cfg) noexcept;
@@ -103,38 +139,39 @@ namespace b2h
             {
                 using namespace b2h::events::mqtt;
 
-                assert(static_cast<bool>(m_handle));
+                assert(static_cast<bool>(m_state->m_handle));
 
                 log::debug(COMPONENT, "Attempting to connect.");
 
-                m_receiver.async_receive<connect>(
+                m_state->m_receiver.async_receive<connect>(
                     std::forward<HandlerT>(handler));
 
                 esp_err_t result = ESP_OK;
 
-                if (result = ::esp_mqtt_client_register_event(m_handle.get(),
+                if (result = ::esp_mqtt_client_register_event(
+                        m_state->m_handle.get(),
                         static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID),
                         &mqtt_event_callback,
-                        static_cast<void*>(this));
+                        static_cast<void*>(m_state.get()));
                     result != ESP_OK)
                 {
                     log::error(COMPONENT,
                         "Failed to register events, error code: {0} [{1}]",
                         result,
                         ::esp_err_to_name(result));
-                    m_dispatcher.async_dispatch<connect>(
+                    m_state->m_dispatcher.async_dispatch<connect>(
                         tl::make_unexpected(result));
                     return;
                 }
 
-                if (result = ::esp_mqtt_client_start(m_handle.get());
+                if (result = ::esp_mqtt_client_start(m_state->m_handle.get());
                     result != ESP_OK)
                 {
                     log::error(COMPONENT,
                         "Failed to start, error code: {0} [{1}]",
                         result,
                         ::esp_err_to_name(result));
-                    m_dispatcher.async_dispatch<connect>(
+                    m_state->m_dispatcher.async_dispatch<connect>(
                         tl::make_unexpected(result));
                     return;
                 }
@@ -147,17 +184,18 @@ namespace b2h
             {
                 using namespace b2h::events::mqtt;
 
-                assert(static_cast<bool>(m_handle));
+                assert(static_cast<bool>(m_state->m_handle));
 
                 log::debug(COMPONENT, "Attempting to disconnect.");
 
-                m_receiver.async_receive<disconnect>(
+                m_state->m_receiver.async_receive<disconnect>(
                     std::forward<HandlerT>(handler));
 
-                if (::esp_mqtt_client_stop(m_handle.get()) != ESP_OK)
+                if (::esp_mqtt_client_stop(m_state->m_handle.get()) != ESP_OK)
                 {
-                    m_dispatcher.async_dispatch<events::mqtt::disconnect>(
-                        tl::make_unexpected(ESP_FAIL));
+                    m_state->m_dispatcher
+                        .async_dispatch<events::mqtt::disconnect>(
+                            tl::make_unexpected(ESP_FAIL));
                 }
             }
 
@@ -167,18 +205,19 @@ namespace b2h
             {
                 using namespace b2h::events::mqtt;
 
-                assert(static_cast<bool>(m_handle));
+                assert(static_cast<bool>(m_state->m_handle));
 
                 log::debug(COMPONENT, "Subscribing to topic.");
                 log::verbose(COMPONENT, "topic: {}", topic);
 
-                m_receiver.async_receive<subscribe>(
+                m_state->m_receiver.async_receive<subscribe>(
                     std::forward<HandlerT>(handler));
 
-                if (::esp_mqtt_client_subscribe(m_handle.get(), topic, qos) ==
-                    -1)
+                if (::esp_mqtt_client_subscribe(m_state->m_handle.get(),
+                        topic,
+                        qos) == -1)
                 {
-                    m_dispatcher.async_dispatch<subscribe>(
+                    m_state->m_dispatcher.async_dispatch<subscribe>(
                         tl::make_unexpected(ESP_FAIL));
                 }
             }
@@ -213,17 +252,18 @@ namespace b2h
             {
                 using namespace b2h::events::mqtt;
 
-                assert(static_cast<bool>(m_handle));
+                assert(static_cast<bool>(m_state->m_handle));
 
                 log::debug(COMPONENT, "Unsubscribing from topic.");
                 log::verbose(COMPONENT, "topic: {}", topic);
 
-                m_receiver.async_receive<unsubscribe>(
+                m_state->m_receiver.async_receive<unsubscribe>(
                     std::forward<HandlerT>(handler));
 
-                if (::esp_mqtt_client_unsubscribe(m_handle.get(), topic) == -1)
+                if (::esp_mqtt_client_unsubscribe(m_state->m_handle.get(),
+                        topic) == -1)
                 {
-                    m_dispatcher.async_dispatch<unsubscribe>(
+                    m_state->m_dispatcher.async_dispatch<unsubscribe>(
                         tl::make_unexpected(ESP_FAIL));
                 }
             }
@@ -242,15 +282,15 @@ namespace b2h
             {
                 using namespace b2h::events::mqtt;
 
-                assert(static_cast<bool>(m_handle));
+                assert(static_cast<bool>(m_state->m_handle));
 
                 log::debug(COMPONENT, "Publishing MQTT data.");
                 log::verbose(COMPONENT, "topic: {}; data: {}", topic, data);
 
-                m_receiver.async_receive<publish>(
+                m_state->m_receiver.async_receive<publish>(
                     std::forward<HandlerT>(handler));
 
-                if (::esp_mqtt_client_enqueue(m_handle.get(),
+                if (::esp_mqtt_client_enqueue(m_state->m_handle.get(),
                         topic,
                         data.data(),
                         data.size(),
@@ -258,14 +298,14 @@ namespace b2h
                         static_cast<int>(retain),
                         true) == -1)
                 {
-                    m_dispatcher.async_dispatch<publish>(
+                    m_state->m_dispatcher.async_dispatch<publish>(
                         tl::make_unexpected(ESP_FAIL));
                     return;
                 }
 
                 if (qos == 0)
                 {
-                    m_dispatcher.async_dispatch<publish>({});
+                    m_state->m_dispatcher.async_dispatch<publish>({});
                 }
             }
 
@@ -286,38 +326,14 @@ namespace b2h
                 using namespace b2h::events::mqtt;
 
                 log::debug(COMPONENT, "Waiting for data.");
-                m_receiver.async_receive<data>(std::forward<HandlerT>(handler));
+                m_state->m_receiver.async_receive<data>(
+                    std::forward<HandlerT>(handler));
             }
 
         private:
-            // clang-format off
-            using dispatcher_type = event::dispatcher<
-                b2h::events::mqtt::connect,
-                b2h::events::mqtt::data,
-                b2h::events::mqtt::disconnect,
-                b2h::events::mqtt::publish,
-                b2h::events::mqtt::subscribe,
-                b2h::events::mqtt::unsubscribe
-            >;
-
-            using receiver_type = typename dispatcher_type::receiver_type;
-
-            using handle_ptr = std::unique_ptr<
-                esp_mqtt_client, 
-                decltype(&::esp_mqtt_client_destroy)
-            >;
-            // clang-format on
-
             static std::uint8_t id;
 
-            std::array<char, 3> id_buff;
-
-            dispatcher_type m_dispatcher;
-            receiver_type m_receiver;
-
-            handle_ptr m_handle;
-
-            std::string m_buffer;
+            std::unique_ptr<impl::client_state> m_state;
 
             static void mqtt_event_callback(void* handler_args,
                 esp_event_base_t base, std::int32_t event_id,

@@ -7,16 +7,10 @@
 
 namespace b2h::ble::gatt
 {
-    client::client(event::context& context, std::uint16_t connection_handle,
-        const utils::mac& mac) noexcept :
-        m_dispatcher{ context },
-        m_receiver{ m_dispatcher.make_receiver() },
-        m_connection_handle{ connection_handle },
-        m_mac{ mac },
-        m_read_buffer{},
-        m_service_cache{},
-        m_characteristic_cache{},
-        m_descriptor_cache{}
+    client::client(event::context& context,
+        const std::uint16_t connection_handle, const utils::mac& mac) noexcept :
+        m_state{ std::make_unique<impl::client_state>(
+            context, connection_handle, mac) }
     {
     }
 
@@ -25,13 +19,11 @@ namespace b2h::ble::gatt
     {
         namespace events = events::ble::gatt;
 
-        client* client_ptr = static_cast<client*>(arg);
+        impl::client_state* client_ptr = static_cast<impl::client_state*>(arg);
         assert(client_ptr->m_connection_handle == conn_handle);
 
         if (error->status == BLE_HS_EDONE)
         {
-            client_ptr->m_dispatcher.async_dispatch<events::discover_services>(
-                tcb::make_span(client_ptr->m_service_cache));
             log::info(COMPONENT, "Successfully discovered services.");
 
             log::verbose(COMPONENT, "Discovered services:");
@@ -45,6 +37,8 @@ namespace b2h::ble::gatt
                     ::ble_uuid_to_str(&srv.uuid.u, buff.data()));
             }
 
+            client_ptr->m_dispatcher.async_dispatch<events::discover_services>(
+                tcb::make_span(client_ptr->m_service_cache));
             return 0;
         }
         else if (error->status != 0)
@@ -68,14 +62,11 @@ namespace b2h::ble::gatt
     {
         namespace events = events::ble::gatt;
 
-        client* client_ptr = static_cast<client*>(arg);
+        impl::client_state* client_ptr = static_cast<impl::client_state*>(arg);
         assert(client_ptr->m_connection_handle == conn_handle);
 
         if (error->status == BLE_HS_EDONE)
         {
-            client_ptr->m_dispatcher
-                .async_dispatch<events::discover_characteristics>(
-                    tcb::make_span(client_ptr->m_characteristic_cache));
             log::info(COMPONENT, "Successfully discovered characteristics.");
 
             log::verbose(COMPONENT, "Discovered characteristics:");
@@ -89,6 +80,9 @@ namespace b2h::ble::gatt
                     ::ble_uuid_to_str(&chr.uuid.u, buff.data()));
             }
 
+            client_ptr->m_dispatcher
+                .async_dispatch<events::discover_characteristics>(
+                    tcb::make_span(client_ptr->m_characteristic_cache));
             return 0;
         }
         else if (error->status != 0)
@@ -113,14 +107,11 @@ namespace b2h::ble::gatt
     {
         namespace events = events::ble::gatt;
 
-        client* client_ptr = static_cast<client*>(arg);
+        impl::client_state* client_ptr = static_cast<impl::client_state*>(arg);
         assert(client_ptr->m_connection_handle == conn_handle);
 
         if (error->status == BLE_HS_EDONE)
         {
-            client_ptr->m_dispatcher
-                .async_dispatch<events::discover_descriptors>(
-                    tcb::make_span(client_ptr->m_descriptor_cache));
             log::info(COMPONENT, "Successfully discovered descriptors.");
 
             log::verbose(COMPONENT, "Discovered descriptors:");
@@ -133,6 +124,9 @@ namespace b2h::ble::gatt
                     ::ble_uuid_to_str(&desc.uuid.u, buff.data()));
             }
 
+            client_ptr->m_dispatcher
+                .async_dispatch<events::discover_descriptors>(
+                    tcb::make_span(client_ptr->m_descriptor_cache));
             return 0;
         }
         else if (error->status != 0)
@@ -156,7 +150,7 @@ namespace b2h::ble::gatt
     {
         namespace events = events::ble::gatt;
 
-        client* client_ptr = static_cast<client*>(arg);
+        impl::client_state* client_ptr = static_cast<impl::client_state*>(arg);
         assert(client_ptr->m_connection_handle == conn_handle);
 
         if (error->status != 0)

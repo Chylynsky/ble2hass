@@ -25,11 +25,7 @@ namespace b2h::mqtt
     std::uint8_t client::id = 0;
 
     client::client(event::context& ctx) noexcept :
-        id_buff{},
-        m_dispatcher{ ctx },
-        m_receiver{ m_dispatcher.make_receiver() },
-        m_handle{ nullptr, &::esp_mqtt_client_destroy },
-        m_buffer{}
+        m_state{ std::make_unique<impl::client_state>(ctx) }
     {
     }
 
@@ -51,21 +47,21 @@ namespace b2h::mqtt
             config.password = cfg.password.c_str();
         }
 
-        fmt::format_to(id_buff.begin(), "{0:2x}", id);
+        fmt::format_to(m_state->id_buff.begin(), "{0:2x}", id);
         ++id;
 
-        config.client_id = id_buff.data();
+        config.client_id = m_state->id_buff.data();
         config.disable_clean_session =
             static_cast<int>(cfg.disable_clean_session);
 
-        log::debug(COMPONENT, "Client ID set to: {}.", id_buff.data());
+        log::debug(COMPONENT, "Client ID set to: {}.", m_state->id_buff.data());
 
-        if (m_handle =
-                handle_ptr{
+        if (m_state->m_handle =
+                impl::client_state::handle_ptr{
                     ::esp_mqtt_client_init(&config),
                     &::esp_mqtt_client_destroy,
                 };
-            !m_handle)
+            !m_state->m_handle)
         {
             log::error(COMPONENT,
                 "Failed to initialize MQTT client, error code: {0} [{1}]",
@@ -84,7 +80,8 @@ namespace b2h::mqtt
 
         esp_mqtt_event_handle_t event_data =
             reinterpret_cast<esp_mqtt_event_handle_t>(event);
-        client* client_ptr = static_cast<client*>(handler_args);
+        impl::client_state* client_ptr =
+            static_cast<impl::client_state*>(handler_args);
 
         switch (event_data->event_id)
         {

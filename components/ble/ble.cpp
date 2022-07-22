@@ -23,25 +23,6 @@ namespace b2h::ble
     {
     }
 
-    context::context(context&& other) noexcept :
-        m_dispatcher{ std::move(other.m_dispatcher) },
-        m_receiver{ m_dispatcher.make_receiver() }
-    {
-    }
-
-    context& context::operator=(context&& other) noexcept
-    {
-        if (this == &other)
-        {
-            return *this;
-        }
-
-        m_dispatcher = std::move(other.m_dispatcher);
-        m_receiver   = m_dispatcher.make_receiver();
-
-        return *this;
-    }
-
     tl::expected<void, esp_err_t> context::deinit() noexcept
     {
         log::debug(COMPONENT, "Destroying BLE context.");

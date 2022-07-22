@@ -40,13 +40,13 @@ namespace b2h::event
         {
         }
 
-        receiver(const receiver&) = default;
+        receiver(const receiver&) = delete;
 
         receiver(receiver&&) = default;
 
         ~receiver() = default;
 
-        receiver& operator=(const receiver&) = default;
+        receiver& operator=(const receiver&) = delete;
 
         receiver& operator=(receiver&&) = default;
 

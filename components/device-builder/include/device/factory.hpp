@@ -24,15 +24,23 @@
 #include <map>
 #include <memory>
 #include <string_view>
+#include <variant>
 
 #include "ble/gatt/client.hpp"
 #include "device/base.hpp"
 #include "mqtt/client.hpp"
 
+// Include device implementation headers
+
+#include "xiaomi/lywsd03mmc.hpp"
+#include "xiaomi/mikettle.hpp"
+
 namespace b2h::device
 {
-    using factory_function_t = std::function<std::shared_ptr<interface>(
-        std::unique_ptr<mqtt::client>&&, std::unique_ptr<ble::gatt::client>&&)>;
+    using device_variant_t = std::variant<xiaomi::mikettle, xiaomi::lywsd03mmc>;
+
+    using factory_function_t =
+        std::function<device_variant_t(mqtt::client, ble::gatt::client)>;
 
     extern const std::map<std::string_view, factory_function_t> g_factory_map;
 } // namespace b2h::device

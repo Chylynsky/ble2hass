@@ -23,12 +23,24 @@
 
 namespace b2h::device::xiaomi
 {
-    mikettle::mikettle(std::unique_ptr<mqtt::client>&& mqtt_client,
-        std::unique_ptr<ble::gatt::client>&& gatt_client) noexcept :
+    mikettle::mikettle(
+        mqtt::client mqtt_client, ble::gatt::client gatt_client) noexcept :
         base{ std::move(mqtt_client), std::move(gatt_client) },
         m_state{
             this->gatt_client(),
             this->mqtt_client(),
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
             {},
             make_process_external_event(),
         },
@@ -36,13 +48,36 @@ namespace b2h::device::xiaomi
     {
     }
 
-    void mikettle::on_connected() noexcept
+    mikettle::mikettle(mikettle&& other) :
+        base{ std::move(other) },
+        m_state{ std::move(other.m_state) },
+        m_fsm{ m_state }
+    {
+        using namespace boost::sml;
+
+        if (!other.m_fsm.is("init"_s))
+        {
+            throw std::logic_error{
+                "Cannot move out of a running state machine."
+            };
+        }
+
+        // Neccessarry to avoid causing InstructionFetchProhibited error!
+        // Function returned from make_process_external_event method is
+        // referencing this, which in this case is a pointer to the object we
+        // just moved from.
+        m_state.gatt_client            = gatt_client();
+        m_state.mqtt_client            = mqtt_client();
+        m_state.process_external_event = make_process_external_event();
+    }
+
+    void mikettle::on_connected()
     {
         m_fsm.process_event(mikettle_impl::events::connected{});
     }
 
-    void mikettle::on_notify(std::uint16_t attribute_handle,
-        std::vector<std::uint8_t>&& data) noexcept
+    void mikettle::on_notify(
+        const std::uint16_t attribute_handle, std::vector<std::uint8_t>&& data)
     {
         m_fsm.process_event(
             mikettle_impl::events::notify{ attribute_handle, std::move(data) });

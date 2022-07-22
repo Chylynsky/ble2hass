@@ -34,50 +34,31 @@
 
 namespace b2h::device
 {
-    class interface : public std::enable_shared_from_this<interface>
-    {
-    public:
-        interface()                 = default;
-        interface(const interface&) = default;
-        interface(interface&&)      = default;
-        virtual ~interface()        = default;
-
-        interface& operator=(const interface&) = default;
-        interface& operator=(interface&&) = default;
-
-        virtual void on_connected() noexcept               = 0;
-        virtual void on_disconnected() noexcept            = 0;
-        virtual void on_notify(std::uint16_t attribute_handle,
-            std::vector<std::uint8_t>&& data) noexcept     = 0;
-        virtual std::uint16_t connection_handle() noexcept = 0;
-    };
-
-    class base : public interface
+    class base
     {
     public:
         base()            = delete;
-        base(const base&) = default;
+        base(const base&) = delete;
         base(base&&)      = default;
         virtual ~base()   = default;
 
-        base(std::unique_ptr<mqtt::client>&& mqtt_client,
-            std::unique_ptr<ble::gatt::client>&& gatt_client) noexcept;
+        base(mqtt::client mqtt_client, ble::gatt::client gatt_client) noexcept;
 
-        base& operator=(const base&) = default;
+        base& operator=(const base&) = delete;
         base& operator=(base&&) = default;
 
-        virtual void on_connected() noexcept override;
-        virtual void on_disconnected() noexcept override;
-        virtual void on_notify(std::uint16_t attribute_handle,
-            std::vector<std::uint8_t>&& data) noexcept override;
-        std::uint16_t connection_handle() noexcept override;
+        virtual void on_connected();
+        virtual void on_disconnected();
+        virtual void on_notify(const std::uint16_t attribute_handle,
+            std::vector<std::uint8_t>&& data);
+        std::uint16_t connection_handle() const noexcept;
 
         mqtt::client& mqtt_client() noexcept;
         ble::gatt::client& gatt_client() noexcept;
 
     private:
-        std::unique_ptr<mqtt::client> m_mqtt_client;
-        std::unique_ptr<ble::gatt::client> m_gatt_client;
+        mqtt::client m_mqtt_client;
+        ble::gatt::client m_gatt_client;
     };
 
 } // namespace b2h::device

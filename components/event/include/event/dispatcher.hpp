@@ -59,13 +59,13 @@ namespace b2h::event
 
         basic_dispatcher(const basic_dispatcher&) = delete;
 
-        basic_dispatcher(basic_dispatcher&&) = default;
+        basic_dispatcher(basic_dispatcher&&) = delete;
 
         ~basic_dispatcher() = default;
 
-        basic_dispatcher& operator=(const basic_dispatcher&) = default;
+        basic_dispatcher& operator=(const basic_dispatcher&) = delete;
 
-        basic_dispatcher& operator=(basic_dispatcher&&) = default;
+        basic_dispatcher& operator=(basic_dispatcher&&) = delete;
 
         template<typename EventT>
         static constexpr std::size_t event_id() noexcept
@@ -92,14 +92,11 @@ namespace b2h::event
 
             static constexpr std::size_t id = event_id<EventT>();
 
-            log::verbose(COMPONENT,
-                "Sheduling work for event id: {}. Current event flags: {}",
-                id,
-                m_flags);
+            log::verbose(COMPONENT, "Sheduling work for event id: {}.", id);
 
             assert(!m_flags[id]); // Handler should not be already waiting
                                   // for completion
-            m_dispatch_table.template set_handler<id>(
+            m_dispatch_table.template set_handler<EventT>(
                 std::forward<HandlerT>(handler));
             m_flags[id] = true;
             ++m_context.get().active_events();
@@ -111,9 +108,8 @@ namespace b2h::event
             static constexpr std::size_t id = event_id<EventT>();
 
             log::verbose(COMPONENT,
-                "Dispatching handler for event id: {}. Current event flags: {}",
-                id,
-                m_flags);
+                "Dispatching handler for event id: {}.",
+                id);
 
             if (!m_flags[id])
             {
@@ -122,8 +118,7 @@ namespace b2h::event
                 return;
             }
 
-            auto handler =
-                std::move(m_dispatch_table.template handler<EventT>());
+            auto handler = m_dispatch_table.template handler<EventT>();
 
             // Ready for new work to be sheduled
             m_flags[id] = false;
@@ -143,7 +138,7 @@ namespace b2h::event
         static constexpr std::string_view COMPONENT{ "event::dispatcher" };
 
         std::reference_wrapper<context_type> m_context;
-        std::array<bool, sizeof...(EventsT)> m_flags;
+        std::array<std::atomic_bool, sizeof...(EventsT)> m_flags;
         dispatch_table_type m_dispatch_table;
     };
 } // namespace b2h::event

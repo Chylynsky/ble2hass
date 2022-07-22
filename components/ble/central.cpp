@@ -97,25 +97,4 @@ namespace b2h::ble::gap
         m_notify_buffer{}
     {
     }
-
-    central::central(central&& other) noexcept :
-        m_dispatcher{ std::move(other.m_dispatcher) },
-        m_receiver{ m_dispatcher.make_receiver() },
-        m_notify_buffer{ std::move(other.m_notify_buffer) }
-    {
-    }
-
-    central& central::operator=(central&& other) noexcept
-    {
-        if (this == &other)
-        {
-            return *this;
-        }
-
-        m_dispatcher    = std::move(other.m_dispatcher);
-        m_receiver      = m_dispatcher.make_receiver();
-        m_notify_buffer = std::move(other.m_notify_buffer);
-
-        return *this;
-    }
 } // namespace b2h::ble::gap

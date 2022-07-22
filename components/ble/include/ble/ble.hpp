@@ -70,11 +70,11 @@ namespace b2h
 
             context(const context&) = delete;
 
-            context(context&& other) noexcept;
+            context(context&& other) = delete;
 
             context& operator=(const context&) = delete;
 
-            context& operator=(context&& other) noexcept;
+            context& operator=(context&& other) = delete;
 
             context() = delete;
 

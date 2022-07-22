@@ -39,6 +39,7 @@
 #include "ble/gatt/client.hpp"
 #include "device/base.hpp"
 #include "hass/device_types.hpp"
+#include "hass/topic_templates.hpp"
 #include "mqtt/client.hpp"
 #include "utils/const_map.hpp"
 #include "utils/json.hpp"
@@ -208,113 +209,75 @@ namespace b2h::device::xiaomi
             0x2902,
         };
 
-        inline constexpr const char* TEMPERATURE_SENSOR_NAME{
+        inline constexpr std::string_view DEVICE_NAME{ "MiKettle" };
+
+        inline constexpr std::string_view DEVICE_MODEL{ "MiKettle" };
+
+        inline constexpr std::string_view DEVICE_MANUFACTURER{ "Xiaomi" };
+
+        inline constexpr std::string_view TEMPERATURE_SENSOR_NAME{
             "MiKettle Temperature"
         };
 
-        inline constexpr const char* TEMPERATURE_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/mikettle_temperature/config"
+        inline constexpr std::string_view TEMPERATURE_SENSOR_UNIQUE_ID_TMPL{
+            "mikettle_{}_temperature"
         };
 
-        inline constexpr const char* TEMPERATURE_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/mikettle_temperature/state"
+        inline constexpr std::string_view ACTION_SENSOR_NAME{
+            "MiKettle Action"
         };
 
-        inline constexpr const char* ACTION_SENSOR_NAME{ "MiKettle Action" };
-
-        inline constexpr const char* ACTION_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/mikettle_action/config"
+        inline constexpr std::string_view ACTION_SENSOR_UNIQUE_ID_TMPL{
+            "mikettle_{}_action"
         };
 
-        inline constexpr const char* ACTION_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/mikettle_action/state"
+        inline constexpr std::string_view MODE_SENSOR_NAME{ "MiKettle Mode" };
+
+        inline constexpr std::string_view MODE_SENSOR_UNIQUE_ID_TMPL{
+            "mikettle_{}_mode"
         };
 
-        inline constexpr const char* MODE_SENSOR_NAME{ "MiKettle Mode" };
-
-        inline constexpr const char* MODE_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/mikettle_mode/config"
-        };
-
-        inline constexpr const char* MODE_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/mikettle_mode/state"
-        };
-
-        inline constexpr const char* KEEP_WARM_TIME_SENSOR_NAME{
+        inline constexpr std::string_view KEEP_WARM_TIME_SENSOR_NAME{
             "MiKettle Keep Warm Time"
         };
 
-        inline constexpr const char* KEEP_WARM_TIME_SENSOR_CONFIG_TOPIC{
-            "homeassistant/sensor/mikettle_keep_warm_time/config"
+        inline constexpr std::string_view KEEP_WARM_TIME_SENSOR_UNIQUE_ID_TMPL{
+            "mikettle_{}_keep_warm_time"
         };
 
-        inline constexpr const char* KEEP_WARM_TIME_SENSOR_STATE_TOPIC{
-            "homeassistant/sensor/mikettle_keep_warm_time/state"
-        };
-
-        inline constexpr const char* TEMPERATURE_SET_NUMBER_NAME{
+        inline constexpr std::string_view TEMPERATURE_SET_NUMBER_NAME{
             "MiKettle Temperature Set"
         };
 
-        inline constexpr const char* TEMPERATURE_SET_NUMBER_CONFIG_TOPIC{
-            "homeassistant/number/mikettle_temperature_set/config"
+        inline constexpr std::string_view TEMPERATURE_SET_NUMBER_UNIQUE_ID_TMPL{
+            "mikettle_{}_temperature_set"
         };
 
-        inline constexpr const char* TEMPERATURE_SET_NUMBER_STATE_TOPIC{
-            "homeassistant/number/mikettle_temperature_set/state"
-        };
-
-        inline constexpr const char* TEMPERATURE_SET_NUMBER_CMD_TOPIC{
-            "homeassistant/number/mikettle_temperature_set/cmd"
-        };
-
-        inline constexpr const char* KEEP_WARM_TIME_LIMIT_NUMBER_NAME{
+        inline constexpr std::string_view KEEP_WARM_TIME_LIMIT_NUMBER_NAME{
             "MiKettle Keep Warm Time Limit"
         };
 
-        inline constexpr const char* KEEP_WARM_TIME_LIMIT_NUMBER_CONFIG_TOPIC{
-            "homeassistant/number/mikettle_keep_warm_time_limit/config"
-        };
+        inline constexpr std::string_view
+            KEEP_WARM_TIME_LIMIT_NUMBER_UNIQUE_ID_TMPL{
+                "mikettle_{}_keep_warm_time_limit"
+            };
 
-        inline constexpr const char* KEEP_WARM_TIME_LIMIT_NUMBER_STATE_TOPIC{
-            "homeassistant/number/mikettle_keep_warm_time_limit/state"
-        };
-
-        inline constexpr const char* KEEP_WARM_TIME_LIMIT_NUMBER_CMD_TOPIC{
-            "homeassistant/number/mikettle_keep_warm_time_limit/cmd"
-        };
-
-        inline constexpr const char* KEEP_WARM_TYPE_SELECT_NAME{
+        inline constexpr std::string_view KEEP_WARM_TYPE_SELECT_NAME{
             "MiKettle Keep Warm Type"
         };
 
-        inline constexpr const char* KEEP_WARM_TYPE_SELECT_CONFIG_TOPIC{
-            "homeassistant/select/mikettle_keep_warm_type/config"
+        inline constexpr std::string_view KEEP_WARM_TYPE_SELECT_UNIQUE_ID_TMPL{
+            "mikettle_{}_keep_warm_type"
         };
 
-        inline constexpr const char* KEEP_WARM_TYPE_SELECT_STATE_TOPIC{
-            "homeassistant/select/mikettle_keep_warm_type/state"
-        };
-
-        inline constexpr const char* KEEP_WARM_TYPE_SELECT_CMD_TOPIC{
-            "homeassistant/select/mikettle_keep_warm_type/cmd"
-        };
-
-        inline constexpr const char* TURN_OFF_AFTER_BOIL_SWITCH_NAME{
+        inline constexpr std::string_view TURN_OFF_AFTER_BOIL_SWITCH_NAME{
             "MiKettle Turn Off After Boil"
         };
 
-        inline constexpr const char* TURN_OFF_AFTER_BOIL_SWITCH_CONFIG_TOPIC{
-            "homeassistant/switch/mikettle_turn_off_after_boil/config"
-        };
-
-        inline constexpr const char* TURN_OFF_AFTER_BOIL_SWITCH_STATE_TOPIC{
-            "homeassistant/switch/mikettle_turn_off_after_boil/state"
-        };
-
-        inline constexpr const char* TURN_OFF_AFTER_BOIL_SWITCH_CMD_TOPIC{
-            "homeassistant/switch/mikettle_turn_off_after_boil/cmd"
-        };
+        inline constexpr std::string_view
+            TURN_OFF_AFTER_BOIL_SWITCH_UNIQUE_ID_TMPL{
+                "mikettle_{}_turn_off_after_boil"
+            };
 
         inline constexpr std::string_view ACTION_IDLE{ "idle" };
         inline constexpr std::string_view ACTION_HEATING{ "heating" };
@@ -568,6 +531,16 @@ namespace b2h::device::xiaomi
                 ble::gatt::characteristic auth_chr = {};
             };
 
+            struct configuring {
+                using connection_tuple_t =
+                    std::pair<std::string_view, std::string_view>;
+                using connections_list_t = std::array<connection_tuple_t, 1>;
+
+                std::string mac_buf;
+                std::string unique_id;
+                connections_list_t conn;
+            };
+
             struct operating {
                 std::uint16_t status_chr_handle    = 0;
                 std::uint16_t time_chr_handle      = 0;
@@ -579,12 +552,26 @@ namespace b2h::device::xiaomi
                 cache_t cache = {};
             };
 
-            using state_variant_t = std::variant<connecting, operating>;
+            using state_variant_t =
+                std::variant<connecting, configuring, operating>;
 
-            ble::gatt::client& gatt_client;
-            mqtt::client& mqtt_client;
+            std::reference_wrapper<ble::gatt::client> gatt_client;
+            std::reference_wrapper<mqtt::client> mqtt_client;
 
             state_variant_t state_var;
+
+            std::string temp_stat_topic;
+            std::string actn_stat_topic;
+            std::string mode_stat_topic;
+            std::string keep_warm_time_stat_topic;
+            std::string temp_set_stat_topic;
+            std::string temp_set_cmd_topic;
+            std::string keep_warm_time_limit_stat_topic;
+            std::string keep_warm_time_limit_cmd_topic;
+            std::string keep_warm_type_stat_topic;
+            std::string keep_warm_type_cmd_topic;
+            std::string toab_stat_topic;
+            std::string toab_cmd_topic;
 
             std::function<void(external_event_variant_t)>
                 process_external_event;
@@ -605,6 +592,18 @@ namespace b2h::device::xiaomi
                             return ::ble_uuid_cmp(&attr.uuid.u, &uuid.u) == 0;
                         });
                 };
+
+                const auto make_hass_device =
+                    [](mikettle_state::configuring& state) {
+                        hass::device_type device;
+
+                        device.name         = DEVICE_NAME;
+                        device.model        = DEVICE_MODEL;
+                        device.manufacturer = DEVICE_MANUFACTURER;
+                        device.connections  = tcb::make_span(state.conn);
+
+                        return device;
+                    };
 
                 const auto disc_srv_handler = [](mikettle_state& state) {
                     return [&](auto&& result) {
@@ -676,23 +675,15 @@ namespace b2h::device::xiaomi
                     };
                 };
 
-                const auto mqtt_sub = [=](const char* topic) {
-                    return [=](mikettle_state& state) {
-                        state.mqtt_client.async_subscribe(topic,
-                            1,
-                            subscribe_handler(state));
-                    };
-                };
-
                 const auto on_start = [=](mikettle_state& state) {
-                    state.gatt_client.async_discover_service_by_uuid(
+                    state.gatt_client.get().async_discover_service_by_uuid(
                         &GATT_UUID_KETTLE_SRV.u,
                         disc_srv_handler(state));
                 };
 
                 const auto on_srv_disced = [=](mikettle_state& state,
                                                events::srv_disced event) {
-                    state.gatt_client.async_discover_characteristics(
+                    state.gatt_client.get().async_discover_characteristics(
                         event.services.front(),
                         disc_chr_handler(state));
                 };
@@ -746,7 +737,7 @@ namespace b2h::device::xiaomi
                 const auto on_auth_start = [=](mikettle_state& state) {
                     auto& state_var =
                         std::get<mikettle_state::connecting>(state.state_var);
-                    state.gatt_client.async_write(
+                    state.gatt_client.get().async_write(
                         state_var.auth_init_chr_handle,
                         key1,
                         write_handler(state));
@@ -755,7 +746,7 @@ namespace b2h::device::xiaomi
                 const auto on_auth_init_write = [=](mikettle_state& state) {
                     auto& state_var =
                         std::get<mikettle_state::connecting>(state.state_var);
-                    state.gatt_client.async_discover_descriptors(
+                    state.gatt_client.get().async_discover_descriptors(
                         state_var.auth_chr,
                         disc_desc_handler(state));
                 };
@@ -774,7 +765,7 @@ namespace b2h::device::xiaomi
                         return;
                     }
 
-                    state.gatt_client.async_write(cccd_it->handle,
+                    state.gatt_client.get().async_write(cccd_it->handle,
                         subscribe,
                         write_handler(state));
                 };
@@ -783,17 +774,20 @@ namespace b2h::device::xiaomi
                     auto reversed_mac{
                         utils::make_mac(
                             std::make_reverse_iterator(
-                                state.gatt_client.mac().as_bytes().end()),
-                            std::make_reverse_iterator(
-                                state.gatt_client.mac().as_bytes().begin()))
+                                state.gatt_client.get().mac().as_bytes().end()),
+                            std::make_reverse_iterator(state.gatt_client.get()
+                                                           .mac()
+                                                           .as_bytes()
+                                                           .begin()))
                             .value(),
                     };
 
                     auto& state_var =
                         std::get<mikettle_state::connecting>(state.state_var);
 
-                    state.gatt_client.async_write(state_var.auth_chr_handle,
-                        cipher(mix_a(state.gatt_client.mac().as_bytes(),
+                    state.gatt_client.get().async_write(
+                        state_var.auth_chr_handle,
+                        cipher(mix_a(state.gatt_client.get().mac().as_bytes(),
                                    PRODUCT_ID),
                             token),
                         write_handler(state));
@@ -801,6 +795,8 @@ namespace b2h::device::xiaomi
 
                 const auto on_auth_notify = [](mikettle_state& state,
                                                 const events::notify& event) {
+                    using namespace std::literals;
+
                     auto& state_var =
                         std::get<mikettle_state::connecting>(state.state_var);
 
@@ -809,35 +805,66 @@ namespace b2h::device::xiaomi
                         return;
                     }
 
-                    state.gatt_client.async_write(state_var.auth_chr_handle,
+                    state.gatt_client.get().async_write(
+                        state_var.auth_chr_handle,
                         cipher(token, key2),
-                        [&](auto&&) {
-                            state.gatt_client.async_read(
+                        [&, auth_handle{ state_var.auth_chr_handle }](auto&&) {
+                            state.gatt_client.get().async_read(
                                 state_var.version_chr_handle,
                                 event::empty_handler); // Data must be read but
                                                        // can be ignored.
 
-                            state.gatt_client.async_write(
-                                state_var.auth_chr_handle,
+                            state.gatt_client.get().async_write(auth_handle,
                                 unsubscribe,
-                                [&](auto&&) {
-                                    state.state_var =
-                                        mikettle_state::operating{};
-                                });
+                                event::empty_handler);
                         });
+
+                    const utils::mac& mac     = state.gatt_client.get().mac();
+                    const tcb::span mac_bytes = mac.as_bytes();
+                    mikettle_state::configuring conf;
+
+                    conf.mac_buf = mac.to_string();
+                    conf.unique_id =
+                        fmt::format("{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"sv,
+                            mac_bytes[5],
+                            mac_bytes[4],
+                            mac_bytes[3],
+                            mac_bytes[2],
+                            mac_bytes[1],
+                            mac_bytes[0]);
+
+                    conf.conn[0].first  = "mac"sv;
+                    conf.conn[0].second = conf.mac_buf;
+
+                    state.state_var = std::move(conf);
                 };
 
                 const auto on_conf_temp_sens = [=](mikettle_state& state) {
                     hass::sensor_type sens;
 
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string temp_unique_id =
+                        fmt::format(TEMPERATURE_SENSOR_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string temp_cfg_topic =
+                        fmt::format(hass::SENSOR_CFG_TOPIC_TMPL,
+                            temp_unique_id);
+
+                    state.temp_stat_topic =
+                        fmt::format(hass::SENSOR_STATE_TOPIC_TMPL,
+                            temp_unique_id);
+
                     sens.name                = TEMPERATURE_SENSOR_NAME;
-                    sens.state_topic         = TEMPERATURE_SENSOR_STATE_TOPIC;
+                    sens.state_topic         = state.temp_stat_topic;
+                    sens.device              = make_hass_device(state_var);
+                    sens.unique_id           = temp_unique_id;
                     sens.device_class        = "temperature";
                     sens.unit_of_measurement = "°C";
                     sens.qos                 = 0;
 
-                    state.mqtt_client.async_publish(
-                        TEMPERATURE_SENSOR_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(temp_cfg_topic,
                         utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
@@ -847,11 +874,27 @@ namespace b2h::device::xiaomi
                 const auto on_conf_actn_sens = [=](mikettle_state& state) {
                     hass::sensor_type sens;
 
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string actn_unique_id =
+                        fmt::format(ACTION_SENSOR_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string actn_cfg_topic =
+                        fmt::format(hass::SENSOR_CFG_TOPIC_TMPL,
+                            actn_unique_id);
+
+                    state.actn_stat_topic =
+                        fmt::format(hass::SENSOR_STATE_TOPIC_TMPL,
+                            actn_unique_id);
+
                     sens.name        = ACTION_SENSOR_NAME;
-                    sens.state_topic = ACTION_SENSOR_STATE_TOPIC;
+                    sens.device      = make_hass_device(state_var);
+                    sens.unique_id   = actn_unique_id;
+                    sens.state_topic = state.actn_stat_topic;
                     sens.qos         = 0;
 
-                    state.mqtt_client.async_publish(ACTION_SENSOR_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(actn_cfg_topic,
                         utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
@@ -861,11 +904,27 @@ namespace b2h::device::xiaomi
                 const auto on_conf_mode_sens = [=](mikettle_state& state) {
                     hass::sensor_type sens;
 
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string mode_unique_id =
+                        fmt::format(MODE_SENSOR_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string mode_cfg_topic =
+                        fmt::format(hass::SENSOR_CFG_TOPIC_TMPL,
+                            mode_unique_id);
+
+                    state.mode_stat_topic =
+                        fmt::format(hass::SENSOR_STATE_TOPIC_TMPL,
+                            mode_unique_id);
+
                     sens.name        = MODE_SENSOR_NAME;
-                    sens.state_topic = MODE_SENSOR_STATE_TOPIC;
+                    sens.device      = make_hass_device(state_var);
+                    sens.unique_id   = mode_unique_id;
+                    sens.state_topic = state.mode_stat_topic;
                     sens.qos         = 0;
 
-                    state.mqtt_client.async_publish(MODE_SENSOR_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(mode_cfg_topic,
                         utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
@@ -875,13 +934,28 @@ namespace b2h::device::xiaomi
                 const auto on_conf_warm_time_sens = [=](mikettle_state& state) {
                     hass::sensor_type sens;
 
-                    sens.name        = KEEP_WARM_TIME_SENSOR_NAME;
-                    sens.state_topic = KEEP_WARM_TIME_SENSOR_STATE_TOPIC;
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string warm_time_unique_id =
+                        fmt::format(KEEP_WARM_TIME_SENSOR_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string warm_time_cfg_topic =
+                        fmt::format(hass::SENSOR_CFG_TOPIC_TMPL,
+                            warm_time_unique_id);
+
+                    state.keep_warm_time_stat_topic =
+                        fmt::format(hass::SENSOR_STATE_TOPIC_TMPL,
+                            warm_time_unique_id);
+
+                    sens.name                = KEEP_WARM_TIME_SENSOR_NAME;
+                    sens.device              = make_hass_device(state_var);
+                    sens.unique_id           = warm_time_unique_id;
+                    sens.state_topic         = state.keep_warm_time_stat_topic;
                     sens.unit_of_measurement = "min";
                     sens.qos                 = 0;
 
-                    state.mqtt_client.async_publish(
-                        KEEP_WARM_TIME_SENSOR_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(warm_time_cfg_topic,
                         utils::json::dump(hass::serialize(sens)),
                         1,
                         true,
@@ -891,18 +965,36 @@ namespace b2h::device::xiaomi
                 const auto on_conf_temp_set_num = [=](mikettle_state& state) {
                     hass::number_type num;
 
-                    num.name          = TEMPERATURE_SET_NUMBER_NAME;
-                    num.state_topic   = TEMPERATURE_SET_NUMBER_STATE_TOPIC;
-                    num.command_topic = TEMPERATURE_SET_NUMBER_CMD_TOPIC;
-                    num.min           = 40.0;
-                    num.max           = 95.0;
-                    num.step          = 1.0;
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string temp_set_unique_id =
+                        fmt::format(TEMPERATURE_SET_NUMBER_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string temp_set_cfg_topic =
+                        fmt::format(hass::NUMBER_CFG_TOPIC_TMPL,
+                            temp_set_unique_id);
+
+                    state.temp_set_stat_topic =
+                        fmt::format(hass::NUMBER_STATE_TOPIC_TMPL,
+                            temp_set_unique_id);
+                    state.temp_set_cmd_topic =
+                        fmt::format(hass::NUMBER_CMD_TOPIC_TMPL,
+                            temp_set_unique_id);
+
+                    num.name                = TEMPERATURE_SET_NUMBER_NAME;
+                    num.device              = make_hass_device(state_var);
+                    num.unique_id           = temp_set_unique_id;
+                    num.state_topic         = state.temp_set_stat_topic;
+                    num.command_topic       = state.temp_set_cmd_topic;
+                    num.min                 = 40.0;
+                    num.max                 = 95.0;
+                    num.step                = 1.0;
                     num.unit_of_measurement = "°C";
                     num.retain              = true;
                     num.qos                 = 1;
 
-                    state.mqtt_client.async_publish(
-                        TEMPERATURE_SET_NUMBER_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(temp_set_cfg_topic,
                         utils::json::dump(hass::serialize(num)),
                         1,
                         true,
@@ -912,9 +1004,28 @@ namespace b2h::device::xiaomi
                 const auto on_conf_warm_limit_num = [=](mikettle_state& state) {
                     hass::number_type num;
 
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string keep_warm_time_limit_unique_id =
+                        fmt::format(KEEP_WARM_TIME_LIMIT_NUMBER_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string keep_warm_time_limit_cfg_topic =
+                        fmt::format(hass::NUMBER_CFG_TOPIC_TMPL,
+                            keep_warm_time_limit_unique_id);
+
+                    state.keep_warm_time_limit_stat_topic =
+                        fmt::format(hass::NUMBER_STATE_TOPIC_TMPL,
+                            keep_warm_time_limit_unique_id);
+                    state.keep_warm_time_limit_cmd_topic =
+                        fmt::format(hass::NUMBER_CMD_TOPIC_TMPL,
+                            keep_warm_time_limit_unique_id);
+
                     num.name          = KEEP_WARM_TIME_LIMIT_NUMBER_NAME;
-                    num.state_topic   = KEEP_WARM_TIME_LIMIT_NUMBER_STATE_TOPIC;
-                    num.command_topic = KEEP_WARM_TIME_LIMIT_NUMBER_CMD_TOPIC;
+                    num.device        = make_hass_device(state_var);
+                    num.unique_id     = keep_warm_time_limit_unique_id;
+                    num.state_topic   = state.keep_warm_time_limit_stat_topic;
+                    num.command_topic = state.keep_warm_time_limit_cmd_topic;
                     num.min           = 1.0;
                     num.max           = 12.0;
                     num.step          = 0.5;
@@ -922,8 +1033,8 @@ namespace b2h::device::xiaomi
                     num.retain              = true;
                     num.qos                 = 1;
 
-                    state.mqtt_client.async_publish(
-                        KEEP_WARM_TIME_LIMIT_NUMBER_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(
+                        keep_warm_time_limit_cfg_topic,
                         utils::json::dump(hass::serialize(num)),
                         1,
                         true,
@@ -935,20 +1046,39 @@ namespace b2h::device::xiaomi
 
                     hass::select_type sel;
 
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string keep_warm_type_unique_id =
+                        fmt::format(KEEP_WARM_TYPE_SELECT_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string keep_warm_type_cfg_topic =
+                        fmt::format(hass::SELECT_CFG_TOPIC_TMPL,
+                            keep_warm_type_unique_id);
+
+                    state.keep_warm_type_stat_topic =
+                        fmt::format(hass::SELECT_STATE_TOPIC_TMPL,
+                            keep_warm_type_unique_id);
+                    state.keep_warm_type_cmd_topic =
+                        fmt::format(hass::SELECT_CMD_TOPIC_TMPL,
+                            keep_warm_type_unique_id);
+
                     std::array opts{
                         KEEP_WARM_TYPE_BOIL_AND_COOL,
                         KEEP_WARM_TYPE_HEAT_UP,
                     };
 
                     sel.name          = KEEP_WARM_TYPE_SELECT_NAME;
-                    sel.command_topic = KEEP_WARM_TYPE_SELECT_CMD_TOPIC;
-                    sel.state_topic   = KEEP_WARM_TYPE_SELECT_STATE_TOPIC;
+                    sel.device        = make_hass_device(state_var);
+                    sel.unique_id     = keep_warm_type_unique_id;
+                    sel.command_topic = state.keep_warm_type_stat_topic;
+                    sel.state_topic   = state.keep_warm_type_cmd_topic;
                     sel.options       = tcb::make_span(opts);
                     sel.retain        = true;
                     sel.qos           = 1;
 
-                    state.mqtt_client.async_publish(
-                        KEEP_WARM_TYPE_SELECT_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(
+                        keep_warm_type_cfg_topic,
                         utils::json::dump(hass::serialize(sel)),
                         1,
                         true,
@@ -958,14 +1088,32 @@ namespace b2h::device::xiaomi
                 const auto on_conf_toab_sel = [=](mikettle_state& state) {
                     hass::switch_type sw;
 
+                    auto& state_var =
+                        std::get<mikettle_state::configuring>(state.state_var);
+
+                    const std::string toab_unique_id =
+                        fmt::format(TURN_OFF_AFTER_BOIL_SWITCH_UNIQUE_ID_TMPL,
+                            state_var.unique_id);
+                    const std::string toab_cfg_topic =
+                        fmt::format(hass::SWITCH_CFG_TOPIC_TMPL,
+                            toab_unique_id);
+
+                    state.toab_stat_topic =
+                        fmt::format(hass::SWITCH_STATE_TOPIC_TMPL,
+                            toab_unique_id);
+                    state.toab_cmd_topic =
+                        fmt::format(hass::SWITCH_CMD_TOPIC_TMPL,
+                            toab_unique_id);
+
                     sw.name          = TURN_OFF_AFTER_BOIL_SWITCH_NAME;
-                    sw.state_topic   = TURN_OFF_AFTER_BOIL_SWITCH_STATE_TOPIC;
-                    sw.command_topic = TURN_OFF_AFTER_BOIL_SWITCH_CMD_TOPIC;
+                    sw.device        = make_hass_device(state_var);
+                    sw.unique_id     = toab_unique_id;
+                    sw.state_topic   = state.toab_stat_topic;
+                    sw.command_topic = state.toab_cmd_topic;
                     sw.retain        = true;
                     sw.qos           = 1;
 
-                    state.mqtt_client.async_publish(
-                        TURN_OFF_AFTER_BOIL_SWITCH_CONFIG_TOPIC,
+                    state.mqtt_client.get().async_publish(toab_cfg_topic,
                         utils::json::dump(hass::serialize(sw)),
                         1,
                         true,
@@ -973,7 +1121,7 @@ namespace b2h::device::xiaomi
                 };
 
                 const auto on_disc_data_srv = [=](mikettle_state& state) {
-                    state.gatt_client.async_discover_service_by_uuid(
+                    state.gatt_client.get().async_discover_service_by_uuid(
                         &GATT_UUID_KETTLE_DATA_SRV.u,
                         disc_srv_handler(state));
                 };
@@ -1023,34 +1171,52 @@ namespace b2h::device::xiaomi
                     }
 
                     auto& state_var =
-                        std::get<mikettle_state::operating>(state.state_var);
+                        state.state_var.emplace<mikettle_state::operating>();
 
                     state_var.status_chr_handle    = status_it->val_handle;
                     state_var.time_chr_handle      = time_it->val_handle;
                     state_var.setup_chr_handle     = setup_it->val_handle;
                     state_var.boil_mode_chr_handle = boil_mode_it->val_handle;
 
-                    state.gatt_client.async_discover_descriptors(*status_it,
+                    state.gatt_client.get().async_discover_descriptors(
+                        *status_it,
                         disc_desc_handler(state));
                 };
 
-                const auto sub_temp_set =
-                    mqtt_sub(TEMPERATURE_SET_NUMBER_CMD_TOPIC);
+                const auto sub_temp_set = [=](mikettle_state& state) {
+                    state.mqtt_client.get().async_subscribe(
+                        state.temp_set_cmd_topic,
+                        1,
+                        subscribe_handler(state));
+                };
 
-                const auto sub_warm_time_limit =
-                    mqtt_sub(KEEP_WARM_TIME_LIMIT_NUMBER_CMD_TOPIC);
+                const auto sub_warm_time_limit = [=](mikettle_state& state) {
+                    state.mqtt_client.get().async_subscribe(
+                        state.keep_warm_time_limit_cmd_topic,
+                        1,
+                        subscribe_handler(state));
+                };
 
-                const auto sub_warm_type =
-                    mqtt_sub(KEEP_WARM_TYPE_SELECT_CMD_TOPIC);
+                const auto sub_warm_type = [=](mikettle_state& state) {
+                    state.mqtt_client.get().async_subscribe(
+                        state.keep_warm_type_cmd_topic,
+                        1,
+                        subscribe_handler(state));
+                };
 
-                const auto sub_toab =
-                    mqtt_sub(TURN_OFF_AFTER_BOIL_SWITCH_CMD_TOPIC);
+                const auto sub_toab = [=](mikettle_state& state) {
+                    state.mqtt_client.get().async_subscribe(
+                        state.toab_cmd_topic,
+                        1,
+                        subscribe_handler(state));
+                };
 
                 const auto time_set_start_read = [](mikettle_state& state) {
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state.gatt_client.async_read(state_var.time_chr_handle,
+                    state.gatt_client.get().async_read(
+                        state_var.time_chr_handle,
                         [&](auto&& result) {
                             if (!result.has_value())
                             {
@@ -1074,7 +1240,8 @@ namespace b2h::device::xiaomi
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state.gatt_client.async_read(state_var.boil_mode_chr_handle,
+                    state.gatt_client.get().async_read(
+                        state_var.boil_mode_chr_handle,
                         [&](auto&& result) {
                             if (!result.has_value())
                             {
@@ -1116,7 +1283,7 @@ namespace b2h::device::xiaomi
                         std::get<mikettle_state::operating>(state.state_var);
                     state_var.cache.action = event.data[0];
 
-                    state.mqtt_client.async_publish(ACTION_SENSOR_STATE_TOPIC,
+                    state.mqtt_client.get().async_publish(state.actn_stat_topic,
                         action_to_sv(event.data[0]),
                         0,
                         true,
@@ -1137,7 +1304,7 @@ namespace b2h::device::xiaomi
 
                     state_var.cache.mode = event.data[1];
 
-                    state.mqtt_client.async_publish(MODE_SENSOR_STATE_TOPIC,
+                    state.mqtt_client.get().async_publish(state.mode_stat_topic,
                         mode_to_sv(event.data[1]),
                         0,
                         true,
@@ -1167,8 +1334,8 @@ namespace b2h::device::xiaomi
                         "{}",
                         state_var.cache.temperature_set);
 
-                    state.mqtt_client.async_publish(
-                        TEMPERATURE_SET_NUMBER_STATE_TOPIC,
+                    state.mqtt_client.get().async_publish(
+                        state.temp_set_stat_topic,
                         std::string_view{
                             buff.data(),
                             size,
@@ -1201,8 +1368,7 @@ namespace b2h::device::xiaomi
                         "{}",
                         state_var.cache.temperature_current);
 
-                    state.mqtt_client.async_publish(
-                        TEMPERATURE_SENSOR_STATE_TOPIC,
+                    state.mqtt_client.get().async_publish(state.temp_stat_topic,
                         std::string_view{
                             buff.data(),
                             size,
@@ -1226,8 +1392,8 @@ namespace b2h::device::xiaomi
 
                     state_var.cache.keep_warm_type = event.data[6];
 
-                    state.mqtt_client.async_publish(
-                        KEEP_WARM_TYPE_SELECT_STATE_TOPIC,
+                    state.mqtt_client.get().async_publish(
+                        state.keep_warm_type_stat_topic,
                         keep_warm_type_to_sv(state_var.cache.keep_warm_type),
                         1,
                         true,
@@ -1262,8 +1428,8 @@ namespace b2h::device::xiaomi
                         "{}",
                         state_var.cache.keep_warm_time);
 
-                    state.mqtt_client.async_publish(
-                        KEEP_WARM_TIME_SENSOR_STATE_TOPIC,
+                    state.mqtt_client.get().async_publish(
+                        state.keep_warm_time_stat_topic,
                         std::string_view{
                             buff.data(),
                             size,
@@ -1276,36 +1442,33 @@ namespace b2h::device::xiaomi
                 const auto mqtt_receive = [](mikettle_state& state) {
                     const auto mqtt_receive_impl = [](auto self,
                                                        mikettle_state& state) {
-                        state.mqtt_client.async_receive([&, self](
-                                                            auto&& result) {
-                            if (!result.has_value())
-                            {
-                                log::warning(COMPONENT,
-                                    "Failed to read MQTT data.");
-                                state.process_external_event(events::abort{});
-                                return;
-                            }
+                        state.mqtt_client.get().async_receive(
+                            [&, self](auto&& result) {
+                                if (!result.has_value())
+                                {
+                                    log::warning(COMPONENT,
+                                        "Failed to read MQTT data.");
+                                    state.process_external_event(
+                                        events::abort{});
+                                    return;
+                                }
 
-                            state.process_external_event(events::mqtt_data{
-                                result.value().topic,
-                                result.value().data,
+                                state.process_external_event(events::mqtt_data{
+                                    result.value().topic,
+                                    result.value().data,
+                                });
+
+                                self(self, state);
                             });
-
-                            self(self, state);
-                        });
                     };
 
                     mqtt_receive_impl(mqtt_receive_impl, state);
                 };
 
-                const auto make_topic_guard = [](const std::string_view topic) {
-                    return [=](events::mqtt_data event) {
-                        return topic == event.topic;
-                    };
+                const auto topic_warm_type = [](const mikettle_state& state,
+                                                 events::mqtt_data event) {
+                    return state.keep_warm_type_cmd_topic == event.topic;
                 };
-
-                const auto topic_warm_type =
-                    make_topic_guard(KEEP_WARM_TYPE_SELECT_CMD_TOPIC);
 
                 const auto is_warm_type_mqtt_upd =
                     [](mikettle_state& state, events::mqtt_data event) {
@@ -1330,7 +1493,8 @@ namespace b2h::device::xiaomi
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state.gatt_client.async_write(state_var.setup_chr_handle,
+                    state.gatt_client.get().async_write(
+                        state_var.setup_chr_handle,
                         std::array{
                             static_cast<std::uint8_t>(state_var.temp_val),
                             state_var.cache.temperature_set,
@@ -1338,8 +1502,10 @@ namespace b2h::device::xiaomi
                         write_handler(state));
                 };
 
-                const auto topic_temp_set =
-                    make_topic_guard(TEMPERATURE_SET_NUMBER_CMD_TOPIC);
+                const auto topic_temp_set = [](const mikettle_state& state,
+                                                events::mqtt_data event) {
+                    return state.temp_set_cmd_topic == event.topic;
+                };
 
                 const auto is_temp_set_mqtt_upd = [](mikettle_state& state,
                                                       events::mqtt_data event) {
@@ -1374,7 +1540,8 @@ namespace b2h::device::xiaomi
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state.gatt_client.async_write(state_var.setup_chr_handle,
+                    state.gatt_client.get().async_write(
+                        state_var.setup_chr_handle,
                         std::array{
                             state_var.cache.keep_warm_type,
                             static_cast<std::uint8_t>(state_var.temp_val),
@@ -1383,7 +1550,10 @@ namespace b2h::device::xiaomi
                 };
 
                 const auto topic_warm_time_limit =
-                    make_topic_guard(KEEP_WARM_TIME_LIMIT_NUMBER_CMD_TOPIC);
+                    [](const mikettle_state& state, events::mqtt_data event) {
+                        return state.keep_warm_time_limit_cmd_topic ==
+                               event.topic;
+                    };
 
                 const auto is_warm_time_limit_mqtt_upd =
                     [](mikettle_state& state, events::mqtt_data event) {
@@ -1409,7 +1579,8 @@ namespace b2h::device::xiaomi
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state.gatt_client.async_write(state_var.time_chr_handle,
+                    state.gatt_client.get().async_write(
+                        state_var.time_chr_handle,
                         std::array{
                             static_cast<std::uint8_t>(state_var.temp_val),
                         },
@@ -1435,8 +1606,8 @@ namespace b2h::device::xiaomi
                                          state_var.cache.keep_warm_time_limit) /
                                         2.0f));
 
-                            state.mqtt_client.async_publish(
-                                KEEP_WARM_TIME_LIMIT_NUMBER_STATE_TOPIC,
+                            state.mqtt_client.get().async_publish(
+                                state.keep_warm_time_limit_stat_topic,
                                 std::string_view{
                                     buff.data(),
                                     static_cast<std::size_t>(
@@ -1448,8 +1619,10 @@ namespace b2h::device::xiaomi
                         });
                 };
 
-                const auto topic_toab =
-                    make_topic_guard(TURN_OFF_AFTER_BOIL_SWITCH_CMD_TOPIC);
+                const auto topic_toab = [](const mikettle_state& state,
+                                            events::mqtt_data event) {
+                    return state.toab_cmd_topic == event.topic;
+                };
 
                 const auto is_toab_mqtt_upd = [](mikettle_state& state,
                                                   events::mqtt_data event) {
@@ -1475,7 +1648,7 @@ namespace b2h::device::xiaomi
                     auto& state_var =
                         std::get<mikettle_state::operating>(state.state_var);
 
-                    state.gatt_client.async_write(
+                    state.gatt_client.get().async_write(
                         state_var.boil_mode_chr_handle,
                         std::array{
                             static_cast<std::uint8_t>(state_var.temp_val),
@@ -1490,8 +1663,8 @@ namespace b2h::device::xiaomi
                             state_var.cache.turn_off_after_boil =
                                 state_var.temp_val;
 
-                            state.mqtt_client.async_publish(
-                                TURN_OFF_AFTER_BOIL_SWITCH_STATE_TOPIC,
+                            state.mqtt_client.get().async_publish(
+                                state.toab_stat_topic,
                                 uint8_to_switch_val(state_var.temp_val),
                                 1,
                                 true,
@@ -1501,7 +1674,7 @@ namespace b2h::device::xiaomi
 
                 const auto on_abort_conn = [](mikettle_state& state) {
                     log::warning(COMPONENT, "Terminating BLE connection.");
-                    state.gatt_client.terminate();
+                    state.gatt_client.get().terminate();
                 };
 
                 // clang-format off
@@ -1620,21 +1793,21 @@ namespace b2h::device::xiaomi
     class mikettle final : public base
     {
     public:
-        mikettle(std::unique_ptr<mqtt::client>&& mqtt_client,
-            std::unique_ptr<ble::gatt::client>&& gatt_client) noexcept;
+        mikettle(
+            mqtt::client mqtt_client, ble::gatt::client gatt_client) noexcept;
 
         mikettle()                = delete;
         mikettle(const mikettle&) = delete;
-        mikettle(mikettle&&)      = default;
-        ~mikettle()               = default;
+        mikettle(mikettle&&);
+        ~mikettle() = default;
 
         mikettle& operator=(const mikettle&) = delete;
-        mikettle& operator=(mikettle&&) = default;
+        mikettle& operator=(mikettle&&) = delete;
 
-        void on_connected() noexcept override;
+        void on_connected() override;
 
-        void on_notify(std::uint16_t attribute_handle,
-            std::vector<std::uint8_t>&& data) noexcept override;
+        void on_notify(const std::uint16_t attribute_handle,
+            std::vector<std::uint8_t>&& data) override;
 
     private:
         using fsm_t = boost::sml::sm<mikettle_impl::mikettle_fsm,
@@ -1644,15 +1817,16 @@ namespace b2h::device::xiaomi
         mikettle_impl::mikettle_state m_state;
         fsm_t m_fsm;
 
-        auto make_process_external_event()
+        auto make_process_external_event() noexcept
         {
             using external_event_variant_t =
                 mikettle_impl::mikettle_state::external_event_variant_t;
-            return [this](const external_event_variant_t& event_variant) {
-                std::visit(
-                    [this](const auto& arg) { m_fsm.process_event(arg); },
-                    event_variant);
-            };
+            return
+                [this](const external_event_variant_t& event_variant) mutable {
+                    std::visit(
+                        [this](const auto& arg) { m_fsm.process_event(arg); },
+                        event_variant);
+                };
         }
     };
 } // namespace b2h::device::xiaomi

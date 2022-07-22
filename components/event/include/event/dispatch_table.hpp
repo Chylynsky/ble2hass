@@ -52,30 +52,27 @@ namespace b2h::event::impl
         template<typename EventT>
         using handler_type = std::function<void(expected_type<EventT>)>;
 
-        using handler_variant_type = std::variant<handler_type<EventsT>...>;
-
-        using handler_array_type =
-            std::array<handler_variant_type, EVENT_COUNT>;
+        using handler_tuple_type =
+            std::tuple<std::optional<handler_type<EventsT>>...>;
 
         dispatch_table() = default;
 
-        dispatch_table(const dispatch_table&) = default;
+        dispatch_table(const dispatch_table&) = delete;
 
-        dispatch_table(dispatch_table&&) = default;
+        dispatch_table(dispatch_table&&) = delete;
 
         ~dispatch_table() = default;
 
-        dispatch_table& operator=(const dispatch_table&) = default;
+        dispatch_table& operator=(const dispatch_table&) = delete;
 
-        dispatch_table& operator=(dispatch_table&&) = default;
+        dispatch_table& operator=(dispatch_table&&) = delete;
 
         template<std::size_t EventID, typename HandlerT>
         void set_handler(HandlerT&& handler) noexcept
         {
             static_assert(EventID < sizeof...(EventsT),
                 "Event ID out of range.");
-            m_dispatch_array[EventID].template emplace<EventID>(
-                std::forward<HandlerT>(handler));
+            std::get<EventID>(m_dispatch_table) = std::move(handler);
         }
 
         template<typename EventT, typename HandlerT>
@@ -96,16 +93,14 @@ namespace b2h::event::impl
             static constexpr std::size_t event_id =
                 index_of_v<EventT, EventsT...>;
 
-            const auto fun =
-                std::move(std::get<event_id>(m_dispatch_array[event_id]));
-
-            m_dispatch_array[event_id] = {};
-
+            auto& handler_ref = std::get<event_id>(m_dispatch_table);
+            auto fun          = std::move(*handler_ref);
+            handler_ref       = std::nullopt;
             return fun;
         }
 
     private:
-        handler_array_type m_dispatch_array;
+        handler_tuple_type m_dispatch_table;
     };
 } // namespace b2h::event::impl
 

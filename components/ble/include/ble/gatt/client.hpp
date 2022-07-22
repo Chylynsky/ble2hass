@@ -78,43 +78,71 @@ namespace b2h
 
     namespace ble::gatt
     {
+        namespace impl
+        {
+            struct client_state {
+                // clang-format off
+                using dispatcher_type = event::dispatcher<
+                    events::ble::gatt::discover_services,
+                    events::ble::gatt::discover_characteristics,
+                    events::ble::gatt::discover_descriptors,
+                    events::ble::gatt::read,
+                    events::ble::gatt::write
+                >;
+                // clang-format on
+                using receiver_type = typename dispatcher_type::receiver_type;
+
+                client_state(event::context& context,
+                    const std::uint16_t connection_handle,
+                    const utils::mac& mac) :
+                    m_dispatcher{ context },
+                    m_receiver{ m_dispatcher.make_receiver() },
+                    m_connection_handle{ connection_handle },
+                    m_mac{ mac }
+                {
+                }
+
+                dispatcher_type m_dispatcher;
+                receiver_type m_receiver;
+
+                std::uint16_t m_connection_handle;
+                utils::mac m_mac;
+
+                std::vector<std::uint8_t> m_read_buffer = {};
+
+                std::vector<service> m_service_cache               = {};
+                std::vector<characteristic> m_characteristic_cache = {};
+                std::vector<descriptor> m_descriptor_cache         = {};
+            };
+        } // namespace impl
+
         inline constexpr std::string_view COMPONENT{ "gatt::client" };
 
         class client final
         {
         public:
-            // clang-format off
-            using dispatcher_type = event::dispatcher<
-                events::ble::gatt::discover_services,
-                events::ble::gatt::discover_characteristics,
-                events::ble::gatt::discover_descriptors,
-                events::ble::gatt::read,
-                events::ble::gatt::write
-            >;
-            // clang-format on
-            using receiver_type = typename dispatcher_type::receiver_type;
-
-            client(event::context& context, std::uint16_t connection_handle,
+            client(event::context& context,
+                const std::uint16_t connection_handle,
                 const utils::mac& mac) noexcept;
 
             client(const client&) = delete;
 
-            client(client&&) = delete;
+            client(client&&) = default;
 
             ~client() = default;
 
             client& operator=(const client&) = delete;
 
-            client& operator=(client&&) = delete;
+            client& operator=(client&&) = default;
 
             std::uint16_t connection_handle() const noexcept
             {
-                return m_connection_handle;
+                return m_state->m_connection_handle;
             }
 
             const utils::mac& mac() const noexcept
             {
-                return m_mac;
+                return m_state->m_mac;
             }
 
             template<typename HandlerT>
@@ -124,22 +152,23 @@ namespace b2h
 
                 log::debug(COMPONENT, "Discovering services.");
 
-                m_receiver.async_receive<events::discover_services>(
+                m_state->m_receiver.async_receive<events::discover_services>(
                     std::forward<HandlerT>(handler));
 
-                m_service_cache.clear();
+                m_state->m_service_cache.clear();
 
-                int rc = ::ble_gattc_disc_all_svcs(m_connection_handle,
+                int rc = ::ble_gattc_disc_all_svcs(m_state->m_connection_handle,
                     &discover_services_callback,
-                    static_cast<void*>(this));
+                    static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate discover all services procedure. Error code: {}.",
                         rc);
-                    m_dispatcher.async_dispatch<events::discover_services>(
-                        tl::make_unexpected(ble_gatt_error{}));
+                    m_state->m_dispatcher
+                        .async_dispatch<events::discover_services>(
+                            tl::make_unexpected(ble_gatt_error{}));
                     return;
                 }
             }
@@ -152,23 +181,25 @@ namespace b2h
 
                 log::debug(COMPONENT, "Discovering services by uuid.");
 
-                m_receiver.async_receive<events::discover_services>(
+                m_state->m_receiver.async_receive<events::discover_services>(
                     std::forward<HandlerT>(handler));
 
-                m_service_cache.clear();
+                m_state->m_service_cache.clear();
 
-                int rc = ::ble_gattc_disc_svc_by_uuid(m_connection_handle,
-                    uuid,
-                    &discover_services_callback,
-                    static_cast<void*>(this));
+                int rc =
+                    ::ble_gattc_disc_svc_by_uuid(m_state->m_connection_handle,
+                        uuid,
+                        &discover_services_callback,
+                        static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate discover all services procedure. Error code: {}.",
                         rc);
-                    m_dispatcher.async_dispatch<events::discover_services>(
-                        tl::make_unexpected(ble_gatt_error{}));
+                    m_state->m_dispatcher
+                        .async_dispatch<events::discover_services>(
+                            tl::make_unexpected(ble_gatt_error{}));
                     return;
                 }
             }
@@ -184,23 +215,24 @@ namespace b2h
                     srv.start_handle,
                     srv.end_handle);
 
-                m_receiver.async_receive<events::discover_characteristics>(
-                    std::forward<HandlerT>(handler));
+                m_state->m_receiver
+                    .async_receive<events::discover_characteristics>(
+                        std::forward<HandlerT>(handler));
 
-                m_characteristic_cache.clear();
+                m_state->m_characteristic_cache.clear();
 
-                int rc = ::ble_gattc_disc_all_chrs(m_connection_handle,
+                int rc = ::ble_gattc_disc_all_chrs(m_state->m_connection_handle,
                     srv.start_handle,
                     srv.end_handle,
                     &discover_characteristics_callback,
-                    static_cast<void*>(this));
+                    static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate discover all characteristics procedure. Error code: {}.",
                         rc);
-                    m_dispatcher
+                    m_state->m_dispatcher
                         .async_dispatch<events::discover_characteristics>(
                             tl::make_unexpected(ble_gatt_error{}));
                     return;
@@ -218,24 +250,26 @@ namespace b2h
                     srv.start_handle,
                     srv.end_handle);
 
-                m_receiver.async_receive<events::discover_characteristics>(
-                    std::forward<HandlerT>(handler));
+                m_state->m_receiver
+                    .async_receive<events::discover_characteristics>(
+                        std::forward<HandlerT>(handler));
 
-                m_characteristic_cache.clear();
+                m_state->m_characteristic_cache.clear();
 
-                int rc = ::ble_gattc_disc_chrs_by_uuid(m_connection_handle,
-                    srv.start_handle,
-                    srv.end_handle,
-                    uuid,
-                    &discover_characteristics_callback,
-                    static_cast<void*>(this));
+                int rc =
+                    ::ble_gattc_disc_chrs_by_uuid(m_state->m_connection_handle,
+                        srv.start_handle,
+                        srv.end_handle,
+                        uuid,
+                        &discover_characteristics_callback,
+                        static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate discover characteristics by uuid procedure. Error code: {}.",
                         rc);
-                    m_dispatcher
+                    m_state->m_dispatcher
                         .async_dispatch<events::discover_characteristics>(
                             tl::make_unexpected(ble_gatt_error{}));
                     return;
@@ -250,33 +284,34 @@ namespace b2h
 
                 // Find characteristic end handle
                 const auto chr_iter =
-                    std::find_if(m_characteristic_cache.cbegin(),
-                        m_characteristic_cache.cend(),
+                    std::find_if(m_state->m_characteristic_cache.cbegin(),
+                        m_state->m_characteristic_cache.cend(),
                         [handle = chr.val_handle](const characteristic& chr) {
                             return handle == chr.val_handle;
                         });
 
                 // If the obtains the characteristic, it must be in the cache.
-                assert(chr_iter != m_characteristic_cache.end());
+                assert(chr_iter != m_state->m_characteristic_cache.end());
 
                 std::uint16_t chr_end_handle = chr.def_handle;
 
                 if (const auto next_chr_iter = std::next(chr_iter);
-                    next_chr_iter != m_characteristic_cache.cend())
+                    next_chr_iter != m_state->m_characteristic_cache.cend())
                 {
                     chr_end_handle = next_chr_iter->def_handle - 1;
                 }
                 else
                 {
                     // Find service which contains the current characteristic
-                    const auto srv_iter = std::find_if(m_service_cache.cbegin(),
-                        m_service_cache.cend(),
-                        [handle = chr.val_handle](const service& srv) {
-                            return (handle > srv.start_handle &&
-                                    handle < srv.end_handle);
-                        });
+                    const auto srv_iter =
+                        std::find_if(m_state->m_service_cache.cbegin(),
+                            m_state->m_service_cache.cend(),
+                            [handle = chr.val_handle](const service& srv) {
+                                return (handle > srv.start_handle &&
+                                        handle < srv.end_handle);
+                            });
 
-                    assert(srv_iter != m_service_cache.cend());
+                    assert(srv_iter != m_state->m_service_cache.cend());
 
                     chr_end_handle = srv_iter->end_handle;
                 }
@@ -286,24 +321,25 @@ namespace b2h
                     chr.val_handle,
                     chr_end_handle);
 
-                m_receiver.async_receive<events::discover_descriptors>(
+                m_state->m_receiver.async_receive<events::discover_descriptors>(
                     std::forward<HandlerT>(handler));
 
-                m_descriptor_cache.clear();
+                m_state->m_descriptor_cache.clear();
 
-                int rc = ::ble_gattc_disc_all_dscs(m_connection_handle,
+                int rc = ::ble_gattc_disc_all_dscs(m_state->m_connection_handle,
                     chr.val_handle,
                     chr_end_handle,
                     &discover_descriptors_callback,
-                    static_cast<void*>(this));
+                    static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate discover all descriptors procedure. Error code: {}.",
                         rc);
-                    m_dispatcher.async_dispatch<events::discover_descriptors>(
-                        tl::make_unexpected(ble_gatt_error{}));
+                    m_state->m_dispatcher
+                        .async_dispatch<events::discover_descriptors>(
+                            tl::make_unexpected(ble_gatt_error{}));
                     return;
                 }
             }
@@ -319,24 +355,25 @@ namespace b2h
                     srv.start_handle,
                     srv.end_handle);
 
-                m_receiver.async_receive<events::discover_descriptors>(
+                m_state->m_receiver.async_receive<events::discover_descriptors>(
                     std::forward<HandlerT>(handler));
 
-                m_descriptor_cache.clear();
+                m_state->m_descriptor_cache.clear();
 
-                int rc = ::ble_gattc_disc_all_dscs(m_connection_handle,
+                int rc = ::ble_gattc_disc_all_dscs(m_state->m_connection_handle,
                     srv.start_handle,
                     srv.end_handle,
                     &discover_descriptors_callback,
-                    static_cast<void*>(this));
+                    static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate discover all descriptors procedure. Error code: {}.",
                         rc);
-                    m_dispatcher.async_dispatch<events::discover_descriptors>(
-                        tl::make_unexpected(ble_gatt_error{}));
+                    m_state->m_dispatcher
+                        .async_dispatch<events::discover_descriptors>(
+                            tl::make_unexpected(ble_gatt_error{}));
                     return;
                 }
             }
@@ -351,20 +388,20 @@ namespace b2h
                     "Reading attribute value, handle: {}.",
                     attr_handle);
 
-                m_receiver.async_receive<events::read>(
+                m_state->m_receiver.async_receive<events::read>(
                     std::forward<HandlerT>(handler));
 
-                int rc = ::ble_gattc_read(m_connection_handle,
+                int rc = ::ble_gattc_read(m_state->m_connection_handle,
                     attr_handle,
                     &attribute_callback,
-                    static_cast<void*>(this));
+                    static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate read procedure. Error code: {}.",
                         rc);
-                    m_dispatcher.async_dispatch<events::read>(
+                    m_state->m_dispatcher.async_dispatch<events::read>(
                         tl::make_unexpected(ble_gatt_error{}));
                     return;
                 }
@@ -380,22 +417,22 @@ namespace b2h
                     "Writing to attribute, handle: {}.",
                     attr_handle);
 
-                m_receiver.async_receive<events::write>(
+                m_state->m_receiver.async_receive<events::write>(
                     std::forward<HandlerT>(handler));
 
-                int rc = ::ble_gattc_write_flat(m_connection_handle,
+                int rc = ::ble_gattc_write_flat(m_state->m_connection_handle,
                     attr_handle,
                     buff.data(),
                     buff.size(),
                     &attribute_callback,
-                    static_cast<void*>(this));
+                    static_cast<void*>(m_state.get()));
 
                 if (rc != 0)
                 {
                     log::error(COMPONENT,
                         "Failed to initiate write procedure. Error code: {}.",
                         rc);
-                    m_dispatcher.async_dispatch<events::write>(
+                    m_state->m_dispatcher.async_dispatch<events::write>(
                         tl::make_unexpected(ble_gatt_error{}));
                     return;
                 }
@@ -403,22 +440,12 @@ namespace b2h
 
             void terminate()
             {
-                ble_gap_terminate(m_connection_handle,
+                ble_gap_terminate(m_state->m_connection_handle,
                     BLE_ERR_REM_USER_CONN_TERM);
             }
 
         private:
-            dispatcher_type m_dispatcher;
-            receiver_type m_receiver;
-
-            std::uint16_t m_connection_handle;
-            utils::mac m_mac;
-
-            std::vector<std::uint8_t> m_read_buffer;
-
-            std::vector<service> m_service_cache;
-            std::vector<characteristic> m_characteristic_cache;
-            std::vector<descriptor> m_descriptor_cache;
+            std::unique_ptr<impl::client_state> m_state;
 
             static int discover_services_callback(std::uint16_t conn_handle,
                 const ble_gatt_error* error, const service* svc, void* arg);

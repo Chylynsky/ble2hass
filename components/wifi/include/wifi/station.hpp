@@ -80,13 +80,13 @@ namespace b2h
 
             station(const station&) = delete;
 
-            station(station&& other) noexcept;
+            station(station&& other) = delete;
 
             ~station();
 
             station& operator=(const station&) = delete;
 
-            station& operator=(station&& other) noexcept;
+            station& operator=(station&& other) = delete;
 
             void config(const station_config& config) noexcept;
 

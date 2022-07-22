@@ -84,13 +84,13 @@ namespace b2h
 
             central(const central&) = delete;
 
-            central(central&& other) noexcept;
+            central(central&& other) = delete;
 
             ~central() = default;
 
             central& operator=(const central&) = delete;
 
-            central& operator=(central&& other) noexcept;
+            central& operator=(central&& other) = delete;
 
             template<typename HandlerT, typename Rep,
                 typename Period = std::ratio<1>>

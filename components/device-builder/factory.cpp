@@ -20,21 +20,21 @@
 
 #include "device/factory.hpp"
 
-// Include device implementation headers
-
-#include "xiaomi/lywsd03mmc.hpp"
-#include "xiaomi/mikettle.hpp"
-
 namespace b2h::device
 {
     template<typename DeviceT>
-    constexpr auto make_factory() noexcept
+    constexpr factory_function_t make_factory() noexcept
     {
-        return [](std::unique_ptr<mqtt::client>&& mqtt_client,
-                   std::unique_ptr<ble::gatt::client>&& gatt_client)
-                   -> std::shared_ptr<interface> {
-            return std::make_shared<DeviceT>(std::move(mqtt_client),
-                std::move(gatt_client));
+        static_assert(std::is_base_of_v<device::base, DeviceT>,
+            "All device types must derive from device::base.");
+        static_assert(std::is_move_constructible_v<device_variant_t>,
+            "All device types must be move constructible.");
+
+        return [](mqtt::client mqtt_client,
+                   ble::gatt::client gatt_client) -> device_variant_t {
+            return device_variant_t{ std::in_place_type<DeviceT>,
+                std::move(mqtt_client),
+                std::move(gatt_client) };
         };
     }
 

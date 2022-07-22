@@ -196,15 +196,6 @@ err_throw:
             result };
     }
 
-    station::station(station&& other) noexcept :
-        m_netif{ other.m_netif },
-        m_config{ std::move(other.m_config) },
-        m_dispatcher{ std::move(other.m_dispatcher) },
-        m_receiver{ m_dispatcher.make_receiver() }
-    {
-        other.m_netif = nullptr;
-    }
-
     station::~station()
     {
         esp_wifi_stop();
@@ -225,22 +216,6 @@ err_throw:
         esp_netif_deinit();
 
         m_netif = nullptr;
-    }
-
-    station& station::operator=(station&& other) noexcept
-    {
-        if (this == &other)
-        {
-            return *this;
-        }
-
-        m_netif       = other.m_netif;
-        other.m_netif = nullptr;
-        m_config      = std::move(other.m_config);
-        m_dispatcher  = std::move(other.m_dispatcher);
-        m_receiver    = m_dispatcher.make_receiver();
-
-        return *this;
     }
 
     void station::config(const station_config& config) noexcept

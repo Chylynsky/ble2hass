@@ -23,6 +23,7 @@
 
 #include "ble/gap/central.hpp"
 #include "device/base.hpp"
+#include "device/factory.hpp"
 
 #include <future>
 #include <memory>
@@ -35,8 +36,8 @@ namespace b2h::device
         class device_builder
         {
         public:
-            device_builder(std::unique_ptr<mqtt::client>&& mqtt_client,
-                std::unique_ptr<ble::gatt::client>&& gatt_client) noexcept;
+            device_builder(mqtt::client mqtt_client,
+                ble::gatt::client gatt_client) noexcept;
 
             device_builder()                      = delete;
             device_builder(const device_builder&) = delete;
@@ -45,19 +46,18 @@ namespace b2h::device
             device_builder& operator=(const device_builder&) = delete;
             device_builder& operator=(device_builder&&) = default;
 
-            std::shared_ptr<interface> build(
-                const std::string_view name) && noexcept;
+            device_variant_t build(const std::string_view name) &&;
 
         private:
-            std::unique_ptr<mqtt::client> m_mqtt_client;
-            std::unique_ptr<ble::gatt::client> m_gatt_client;
+            mqtt::client m_mqtt_client;
+            ble::gatt::client m_gatt_client;
         };
 
         class gatt_builder
         {
         public:
-            explicit gatt_builder(event::context& context,
-                std::unique_ptr<mqtt::client>&& mqtt_client) noexcept :
+            explicit gatt_builder(
+                event::context& context, mqtt::client mqtt_client) noexcept :
                 m_context{ context },
                 m_mqtt_client{ std::move(mqtt_client) }
             {
@@ -93,15 +93,17 @@ namespace b2h::device
 
                 return device_builder{
                     std::move(m_mqtt_client),
-                    std::make_unique<ble::gatt::client>(m_context,
+                    ble::gatt::client{
+                        m_context,
                         result.value().connection_handle,
-                        mac),
+                        mac,
+                    },
                 };
             }
 
         private:
             event::context& m_context;
-            std::unique_ptr<mqtt::client> m_mqtt_client;
+            mqtt::client m_mqtt_client;
         };
 
         class mqtt_builder
@@ -123,10 +125,9 @@ namespace b2h::device
             {
                 using connect_arg_t = events::mqtt::connect::expected_type;
 
-                std::unique_ptr<mqtt::client> client =
-                    std::make_unique<mqtt::client>(m_context);
+                mqtt::client client{ m_context };
 
-                client->config(config);
+                client.config(config);
 
                 std::packaged_task<connect_arg_t(connect_arg_t &&)>
                     connection_task{
@@ -134,7 +135,7 @@ namespace b2h::device
                     };
 
                 auto connection_future = connection_task.get_future();
-                client->async_connect(std::ref(connection_task));
+                client.async_connect(std::ref(connection_task));
                 auto result = connection_future.get();
 
                 if (!result.has_value())
